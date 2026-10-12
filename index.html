@@ -405,9 +405,10 @@
     };
 
     /* ---------- Link ngắn lưu trên Vercel serverless + database ---------- */
+    const SHORT_CODE_PATTERN = /^(?:[A-Za-z0-9]{6}|[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4})$/;
     const shortCodeCache = storageGet('bhttn_short_codes', {}) || {};
     async function createShortUrl() {
-      if (shortCodeCache[id]) {
+      if (typeof shortCodeCache[id] === 'string' && SHORT_CODE_PATTERN.test(shortCodeCache[id])) {
         publishedCode = shortCodeCache[id];
         return buildShortUrl(publishedCode);
       }
@@ -422,7 +423,7 @@
         body: JSON.stringify(config)
       });
       const result = await response.json();
-      if (!response.ok || !/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/.test(result.code || '')) {
+      if (!response.ok || !/^[A-Za-z0-9]{6}$/.test(result.code || '')) {
         throw new Error(result.error || 'Không thể tạo mã quiz ngắn.');
       }
       shortCodeCache[id] = result.code;
@@ -437,6 +438,30 @@
       url.search = '';
       url.searchParams.set('quiz', encoded);
       return url.toString();
+    }
+    async function loadQuizByShortCode(code) {
+      const cacheKey = `bhttn_short_quiz_${code}`;
+      let cached = null;
+      try { cached = sessionStorage.getItem(cacheKey); }
+      catch (error) { console.warn('Không thể đọc cache quiz trong sessionStorage:', error); }
+      if (cached) {
+        try { return normalizeConfig(JSON.parse(cached)); }
+        catch (error) {
+          console.warn('Cache quiz không hợp lệ, sẽ tải lại từ API:', error);
+          try { sessionStorage.removeItem(cacheKey); }
+          catch (removeError) { console.warn('Không thể xóa cache quiz không hợp lệ:', removeError); }
+        }
+      }
+
+      const endpoint = new URL('/api/quiz', window.location.origin);
+      endpoint.searchParams.set('id', code);
+      const response = await fetch(endpoint);
+      const result = await response.json();
+      if (!response.ok || !result.quiz) throw new Error(result.error || `HTTP ${response.status}`);
+      const loadedConfig = normalizeConfig(result.quiz);
+      try { sessionStorage.setItem(cacheKey, JSON.stringify(loadedConfig)); }
+      catch (error) { console.warn('Không thể lưu cache quiz trong sessionStorage:', error); }
+      return loadedConfig;
     }
     function buildShortUrl(code) {
       const url = new URL(PUBLIC_BASE_URL || window.location.href);
@@ -901,7 +926,7 @@
         $('copyLinkBtn').disabled = false;
         $('shareLinkBtn').disabled = false;
         $('publishedScoresBtn').disabled = false;
-        toast('Đã tạo link quiz 4 ký tự! 🎉');
+        toast('Đã tạo link quiz 6 ký tự! 🎉');
       } catch (error) {
         console.warn('Link rút gọn Vercel không khả dụng, tạo link tự chứa:', error);
         try {
@@ -971,8 +996,7 @@
       showScreen(publishedCode ? 'screen-published' : 'screen-result');
     });
     $('copyScoresLinkBtn').addEventListener('click', async () => {
-      const code = publishedCode || new URLSearchParams(window.location.search).get('s') || id;
-      try { await copyText(buildScoresUrl(code)); toast('Đã copy link xem bảng điểm! 🔗'); }
+      try { await copyText(buildScoresUrl(id)); toast('Đã copy link xem bảng điểm! 🔗'); }
       catch (error) {
         console.error('Không thể copy link bảng điểm:', error);
         toast('Không copy được link bảng điểm.');
@@ -1015,19 +1039,15 @@
         return;
       }
       if (shortCode || scoresCode) {
-        const code = (scoresCode || shortCode || '').toUpperCase();
-        if (!/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/.test(code)) {
+        const requestedCode = scoresCode || shortCode || '';
+        if (!SHORT_CODE_PATTERN.test(requestedCode)) {
           $('linkErrorText').textContent = 'Mã link không đúng định dạng.';
           showScreen('screen-link-error');
           return;
         }
         try {
-          const endpoint = new URL('/api/quiz', window.location.origin);
-          endpoint.searchParams.set('id', code);
-          const response = await fetch(endpoint);
-          const result = await response.json();
-          if (!response.ok || !result.quiz) throw new Error(result.error || `HTTP ${response.status}`);
-          config = normalizeConfig(result.quiz);
+          const code = requestedCode.length === 4 ? requestedCode.toUpperCase() : requestedCode;
+          config = await loadQuizByShortCode(code);
           id = quizId(config);
           publishedCode = code;
           publishedLink = buildShortUrl(code);

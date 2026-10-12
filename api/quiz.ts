@@ -2,8 +2,9 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { quizLinks } from "../db/schema.js";
 
-const CODE_LENGTH = 4;
-const CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+const CODE_LENGTH = 6;
+const CODE_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const ACCEPTED_RANDOM_BYTE_LIMIT = Math.floor(256 / CODE_ALPHABET.length) * CODE_ALPHABET.length;
 const MAX_BODY_BYTES = 100_000;
 
 function isQuizPayload(value: unknown): value is Record<string, unknown> {
@@ -28,14 +29,22 @@ function isQuizPayload(value: unknown): value is Record<string, unknown> {
 }
 
 function createCode(): string {
-  const random = crypto.getRandomValues(new Uint8Array(CODE_LENGTH));
-  return Array.from(random, (byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length]).join("");
+  let code = "";
+  while (code.length < CODE_LENGTH) {
+    const random = crypto.getRandomValues(new Uint8Array(CODE_LENGTH - code.length));
+    for (const byte of random) {
+      if (byte < ACCEPTED_RANDOM_BYTE_LIMIT) code += CODE_ALPHABET[byte % CODE_ALPHABET.length];
+      if (code.length === CODE_LENGTH) break;
+    }
+  }
+  return code;
 }
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  const code = (url.searchParams.get("id") || "").toUpperCase();
-  if (!/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/.test(code)) {
+  const requestedCode = url.searchParams.get("id") || "";
+  const code = requestedCode.length === 4 ? requestedCode.toUpperCase() : requestedCode;
+  if (!/^(?:[A-Za-z0-9]{6}|[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4})$/.test(code)) {
     return Response.json({ error: "Invalid quiz code" }, { status: 400 });
   }
 

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { index, pgTable, serial, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
 
 export const scores = pgTable("scores", {
   id: serial().primaryKey(),
@@ -8,7 +8,7 @@ export const scores = pgTable("scores", {
   score: integer().notNull(),
   total: integer().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [index("scores_quiz_id_idx").on(table.quizId)]);
 
 export const quizLinks = pgTable("quiz_links", {
   code: text().primaryKey(),
