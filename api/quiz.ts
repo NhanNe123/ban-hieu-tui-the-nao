@@ -32,59 +32,46 @@ function createCode(): string {
   return Array.from(random, (byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length]).join("");
 }
 
-function isUniqueViolation(error: unknown): boolean {
-  let current = error;
-  while (current && typeof current === "object") {
-    const candidate = current as { code?: unknown; cause?: unknown };
-    if (candidate.code === "23505") return true;
-    current = candidate.cause;
+export async function GET(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  const code = (url.searchParams.get("id") || "").toUpperCase();
+  if (!/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/.test(code)) {
+    return Response.json({ error: "Invalid quiz code" }, { status: 400 });
   }
-  return false;
+
+  const [record] = await db.select({ quiz: quizLinks.quiz }).from(quizLinks).where(eq(quizLinks.code, code)).limit(1);
+  if (!record) return Response.json({ error: "Quiz not found" }, { status: 404 });
+  return Response.json({ quiz: record.quiz }, { headers: { "Cache-Control": "public, max-age=60" } });
 }
 
-export default async function handler(request: Request): Promise<Response> {
-  const url = new URL(request.url);
+export async function POST(request: Request): Promise<Response> {
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (contentLength > MAX_BODY_BYTES) return Response.json({ error: "Quiz payload too large" }, { status: 413 });
 
-  if (request.method === "GET") {
-    const code = (url.searchParams.get("id") || "").toUpperCase();
-    if (!/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/.test(code)) {
-      return Response.json({ error: "Invalid quiz code" }, { status: 400 });
-    }
-
-    const [record] = await db.select({ quiz: quizLinks.quiz }).from(quizLinks).where(eq(quizLinks.code, code)).limit(1);
-    if (!record) return Response.json({ error: "Quiz not found" }, { status: 404 });
-    return Response.json({ quiz: record.quiz }, { headers: { "Cache-Control": "public, max-age=60" } });
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (request.method === "POST") {
-    const contentLength = Number(request.headers.get("content-length") || 0);
-    if (contentLength > MAX_BODY_BYTES) return Response.json({ error: "Quiz payload too large" }, { status: 413 });
+  if (!isQuizPayload(body) || new TextEncoder().encode(JSON.stringify(body)).length > MAX_BODY_BYTES) {
+    return Response.json({ error: "Invalid quiz" }, { status: 400 });
+  }
 
-    let body: unknown;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const code = createCode();
     try {
-      body = await request.json();
-    } catch {
-      return Response.json({ error: "Invalid JSON" }, { status: 400 });
+      const [inserted] = await db
+        .insert(quizLinks)
+        .values({ code, quiz: body })
+        .onConflictDoNothing()
+        .returning({ code: quizLinks.code });
+      if (inserted) return Response.json({ code: inserted.code }, { status: 201 });
+    } catch (error) {
+      console.error("Failed to save short quiz link", error);
+      return Response.json({ error: "Unable to save quiz link" }, { status: 500 });
     }
-
-    if (!isQuizPayload(body) || new TextEncoder().encode(JSON.stringify(body)).length > MAX_BODY_BYTES) {
-      return Response.json({ error: "Invalid quiz" }, { status: 400 });
-    }
-
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const code = createCode();
-      try {
-        await db.insert(quizLinks).values({ code, quiz: body }).onConflictDoNothing();
-        return Response.json({ code }, { status: 201 });
-      } catch (error) {
-        if (!isUniqueViolation(error)) {
-          console.error("Failed to save short quiz link", error);
-          return Response.json({ error: "Unable to save quiz link" }, { status: 500 });
-        }
-      }
-    }
-    return Response.json({ error: "Unable to allocate a short quiz code" }, { status: 503 });
   }
-
-  return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, POST" } });
+  return Response.json({ error: "Unable to allocate a short quiz code" }, { status: 503 });
 }
