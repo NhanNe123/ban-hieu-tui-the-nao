@@ -105,7 +105,7 @@
               <img src="./support-qr.png" alt="Mã QR để ủng hộ tác giả" class="block aspect-square w-full object-contain" fetchpriority="high">
             </figure>
             <p class="mt-3 font-display text-lg font-bold text-blush-500">📱 Quét mã để ủng hộ mình</p>
-            <button id="homeStartBtn" type="button" class="heartbeat mt-5 w-full rounded-3xl bg-gradient-to-r from-blush-400 via-lilac-400 to-mint-400 px-5 py-4 font-display text-xl font-extrabold text-white shadow-lg">🎮 Bắt đầu thử thách</button>
+            <button id="homeStartBtn" type="button" class="heartbeat mt-5 w-full rounded-3xl bg-gradient-to-r from-blush-400 via-lilac-400 to-mint-400 px-5 py-4 font-display text-xl font-extrabold text-white shadow-lg">✍️ Bắt đầu tạo câu hỏi</button>
           </div>
         </article>
       </section>
@@ -168,7 +168,7 @@
         <div class="glass-card flex max-h-[88dvh] flex-col rounded-[2rem] p-4 sm:p-7">
           <div class="mb-3 flex items-center justify-between gap-3">
             <div><p class="text-xs font-bold uppercase tracking-widest text-lilac-500">Creator Studio</p><h1 class="font-display text-2xl font-extrabold sm:text-3xl">✍️ Xưởng tạo quiz</h1></div>
-            <button id="backToResultBtn" type="button" class="shrink-0 rounded-full bg-white/80 px-3 py-2 text-sm font-semibold text-ink/60">← Kết quả</button>
+            <button id="backToResultBtn" type="button" class="shrink-0 rounded-full bg-white/80 px-3 py-2 text-sm font-semibold text-ink/60">← Quay lại</button>
           </div>
           <div class="flex-1 space-y-4 overflow-y-auto pr-1">
             <section class="rounded-3xl border border-white bg-white/65 p-4">
@@ -249,6 +249,7 @@
   </main>
   <div id="toast" role="status" aria-live="polite" class="pointer-events-none fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[70] -translate-x-1/2 translate-y-4 rounded-full bg-ink px-5 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition duration-300"></div>
 
+  <script src="./templates.js"></script>
   <script>
   (() => {
     'use strict';
@@ -267,12 +268,7 @@
       { q: 'Khi rảnh rỗi, tui thường chọn làm gì?', emoji: '🛋️', options: ['Xem phim cuộn chăn', 'Lướt mạng không mục đích', 'Đi cà phê tám chuyện', 'Ngủ một giấc thật ngon'], answer: 0, note: 'Cuộn chăn xem phim là chân ái ngày nghỉ 🍿' },
       { q: 'Điều gì khiến tui cười không ngừng?', emoji: '🤣', options: ['Meme đúng gu', 'Bạn thân kể chuyện xàm', 'Động vật làm trò ngố', 'Cười lây khi thấy người khác cười'], answer: 1, note: 'Bạn thân mà hợp tần số thì nói gì cũng buồn cười 💕' }
     ];
-    const TEMPLATES = [
-      { id: 'food', label: '🍜 Món ăn', emoji: '🍜', q: 'Món ăn mà mình khó cưỡng nhất là gì?', options: ['Món mình thèm khi stress', 'Món ăn yêu thích số 1', 'Món đặc trưng của mình', 'Món ăn vặt lúc nửa đêm'], answer: 1, note: 'Ai cũng có một món chân ái 😌' },
-      { id: 'personality', label: '💖 Tính cách', emoji: '💖', q: 'Nếu nói về tính cách, mình thuộc kiểu nào?', options: ['Dịu dàng, dễ thương', 'Vui vẻ, hơi ngáo ngơ', 'Điềm tĩnh, ít nói', 'Năng động, nhiều năng lượng'], answer: 1, note: 'Mỗi người đều có nét riêng đáng yêu 🌷' },
-      { id: 'habit', label: '🧠 Thói quen', emoji: '🧠', q: 'Thói quen nào mình hay làm nhất?', options: ['Nghe nhạc và mơ màng', 'Ăn vặt khi làm việc', 'Ngủ muộn rồi than mệt', 'Cười vì chuyện chẳng đâu'], answer: 2, note: 'Thói quen ngố cũng rất đáng yêu 😊' },
-      { id: 'quote', label: '💬 Câu nói', emoji: '💬', q: 'Câu nói thân thuộc nhất của mình là gì?', options: ['“Ủa alo?”', '“Để mai tính”', '“Đói quá à”', '“Hong sao đâu”'], answer: 0, note: 'Câu cửa miệng tiết lộ nhiều điều lắm 💫' }
-    ];
+    const QUESTION_TEMPLATES = Array.isArray(window.QUESTION_TEMPLATES) ? window.QUESTION_TEMPLATES : [];
     const STORY = [
       { icon: '💌', title: 'Có một chiếc thử thách nhỏ vừa được gửi đến bạn...', text: 'Ting ting! Bạn có một lá thư mới nè 📬' },
       { icon: '🕵️', title: 'Để xem bạn hiểu {owner} đến mức nào nha...', text: 'Một vài câu hỏi thú vị đang chờ bạn đó 👀' },
@@ -289,6 +285,29 @@
     const PUBLIC_BASE_URL = '';
     const DEFAULT_CONFIG = { id: '', ownerName: 'tui', allowRetry: true, showAnswers: true, secretMessage: '', secretThreshold: 80, questions: DEFAULT_QUESTIONS };
     const deepCopy = (value) => JSON.parse(JSON.stringify(value));
+    const templateDecks = new Map();
+
+    function shuffle(items) {
+      const copy = [...items];
+      for (let index = copy.length - 1; index > 0; index--) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [copy[index], copy[randomIndex]] = [copy[randomIndex], copy[index]];
+      }
+      return copy;
+    }
+    function drawTemplateQuestion(categoryId, questionIndex) {
+      const category = QUESTION_TEMPLATES.find((item) => item.id === categoryId);
+      if (!category || !Array.isArray(category.questions)) return null;
+      const used = new Set(ownerQuestions
+        .filter((_, index) => index !== questionIndex)
+        .map((item) => item.q));
+      let deck = (templateDecks.get(categoryId) || []).filter((item) => !used.has(item.q));
+      if (!deck.length) deck = shuffle(category.questions.filter((item) => !used.has(item.q)));
+      if (!deck.length) return null;
+      const [picked, ...remaining] = deck;
+      templateDecks.set(categoryId, remaining);
+      return deepCopy(picked);
+    }
 
     function validQuestions(value) {
       if (!Array.isArray(value) || value.length < 1 || value.length > 15) return false;
@@ -558,6 +577,7 @@
     let publishedLink = '';
     let publishedCode = '';
     let displayedResult = null;
+    let creatorReturnScreen = 'screen-result';
     let storyCard = $('storyCard');
 
     function renderStory() {
@@ -792,10 +812,8 @@
       Sound.whoosh();
     });
     $('homeStartBtn').addEventListener('click', () => {
-      currentStory = 0;
-      renderStory();
-      showScreen('screen-story');
-      Sound.whoosh();
+      Sound.pop();
+      openCreator('screen-home');
     });
     $('creatorLoopBtn').addEventListener('click', () => { Sound.pop(); openCreator(); });
     $('shareBtn').addEventListener('click', async () => {
@@ -811,7 +829,9 @@
       }
     });
 
-    function openCreator() {
+    function openCreator(returnScreen = 'screen-result') {
+      creatorReturnScreen = returnScreen;
+      $('backToResultBtn').textContent = returnScreen === 'screen-home' ? '← Trang chủ' : '← Kết quả';
       ownerQuestions = deepCopy(config.questions);
       $('ownerInput').value = playerName || (config.ownerName === 'tui' ? '' : config.ownerName);
       $('allowRetryInput').checked = config.allowRetry;
@@ -826,7 +846,7 @@
       list.innerHTML = ownerQuestions.map((question, questionIndex) => `<article class="rounded-3xl border-2 border-lilac-100 bg-white/80 p-4 shadow-sm">
         <div class="mb-3 flex items-center justify-between"><span class="rounded-full bg-lilac-100 px-3 py-1 font-display text-xs font-bold text-lilac-500">Câu ${questionIndex + 1}</span><button type="button" data-delete="${questionIndex}" class="rounded-xl bg-blush-100 px-3 py-2 text-xs font-bold text-blush-500">🗑️ Xóa</button></div>
         <div class="mb-3 grid grid-cols-[56px_1fr] gap-2"><label class="sr-only" for="emoji-${questionIndex}">Emoji câu ${questionIndex + 1}</label><input id="emoji-${questionIndex}" data-field="emoji" data-index="${questionIndex}" maxlength="8" value="${esc(question.emoji)}" class="rounded-xl border border-lilac-200 bg-white px-2 py-3 text-center text-xl outline-none focus:border-lilac-400"><label class="sr-only" for="question-${questionIndex}">Nội dung câu hỏi ${questionIndex + 1}</label><input id="question-${questionIndex}" data-field="q" data-index="${questionIndex}" maxlength="180" value="${esc(question.q)}" placeholder="Nội dung câu hỏi..." class="min-w-0 rounded-xl border border-lilac-200 bg-white px-3 py-3 text-sm outline-none focus:border-lilac-400"></div>
-        <div class="mb-3"><p class="mb-1.5 text-xs font-bold text-ink/65">Gợi ý nhanh — chạm để dùng mẫu</p><div class="flex flex-wrap gap-1.5">${TEMPLATES.map((template) => `<button type="button" data-template="${template.id}" data-index="${questionIndex}" class="rounded-full border border-lilac-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-ink/70">${template.label}</button>`).join('')}</div></div>
+        <div class="mb-3"><p class="mb-1.5 text-xs font-bold text-ink/65">Gợi ý nhanh — chạm để rút câu ngẫu nhiên</p><div class="flex flex-wrap gap-1.5">${QUESTION_TEMPLATES.map((template) => `<button type="button" data-template="${template.id}" data-index="${questionIndex}" class="rounded-full border border-lilac-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-ink/70">${esc(template.label)}</button>`).join('')}</div></div>
         <fieldset class="space-y-2"><legend class="mb-2 text-xs font-bold text-ink/65">4 đáp án — chọn đáp án đúng</legend>${question.options.map((option, optionIndex) => `<label class="flex items-center gap-2"><input type="radio" name="correct-${questionIndex}" data-correct="${questionIndex}" value="${optionIndex}" ${question.answer === optionIndex ? 'checked' : ''} class="h-5 w-5 accent-blush-500"><span class="w-5 font-display font-bold text-lilac-500">${'ABCD'[optionIndex]}</span><input type="text" data-option="${optionIndex}" data-index="${questionIndex}" maxlength="120" value="${esc(option)}" placeholder="Đáp án ${'ABCD'[optionIndex]}" class="min-w-0 flex-1 rounded-xl border border-lilac-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-lilac-400"></label>`).join('')}</fieldset>
         <label class="mt-3 block text-xs font-semibold text-ink/65">Lời bình luận / giải thích<input data-field="note" data-index="${questionIndex}" maxlength="180" value="${esc(question.note || '')}" placeholder="Lời nhắn sau câu hỏi này (không bắt buộc)" class="mt-1.5 w-full rounded-xl border border-lilac-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-lilac-400"></label>
       </article>`).join('');
@@ -840,9 +860,13 @@
         Sound.tap();
       }));
       list.querySelectorAll('[data-template]').forEach((button) => button.addEventListener('click', () => {
-        const template = TEMPLATES.find((item) => item.id === button.dataset.template);
-        if (!template) return;
-        ownerQuestions[Number(button.dataset.index)] = deepCopy(template);
+        const index = Number(button.dataset.index);
+        const question = drawTemplateQuestion(button.dataset.template, index);
+        if (!question) {
+          toast('Trong chủ đề này không còn câu mới để dùng trong quiz nha!');
+          return;
+        }
+        ownerQuestions[index] = question;
         renderCreatorQuestions();
         Sound.pop();
       }));
@@ -854,7 +878,7 @@
       $('creatorQuestionsList').lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       Sound.pop();
     });
-    $('backToResultBtn').addEventListener('click', () => showScreen('screen-result'));
+    $('backToResultBtn').addEventListener('click', () => showScreen(creatorReturnScreen));
 
     async function currentShareUrl() {
       try { return await createShortUrl(); }
@@ -1062,7 +1086,7 @@
       if (!storageSet('bhttn_active_quiz', config)) toast('Quiz đang chạy nhưng trình duyệt không thể lưu bộ câu hỏi này.');
       renderStory();
       if (window.location.hash === '#create') {
-        openCreator();
+        openCreator('screen-home');
         return;
       }
       const attempt = config.allowRetry ? null : storageGet(attemptKey());
