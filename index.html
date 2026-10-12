@@ -9,33 +9,17 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Bạn hiểu tui thế nào? 💖">
   <meta property="og:description" content="Tui vừa tạo một chiếc quiz siêu dễ thương. Thử xem bạn hiểu tui đến mức nào nha!">
-  <meta property="og:image" content="https://ban-hieu-tui-the-nao.netlify.app/quiz-cover.png">
+  <meta property="og:image" content="https://ban-hieu-tui-the-nao.vercel.app/quiz-cover.png">
   <meta property="og:image:alt" content="Mèo con đội mũ hồng ăn bánh donut đáng yêu">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Bạn hiểu tui thế nào? 💖">
   <meta name="twitter:description" content="Thử thách bạn bè với chiếc quiz siêu dễ thương này nha!">
-  <meta name="twitter:image" content="https://ban-hieu-tui-the-nao.netlify.app/quiz-cover.png">
+  <meta name="twitter:image" content="https://ban-hieu-tui-the-nao.vercel.app/quiz-cover.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💖</text></svg>">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { display: ['"Baloo 2"', 'cursive'], body: ['"Be Vietnam Pro"', 'sans-serif'] },
-          colors: {
-            cream: '#FFF8EE',
-            blush: { 100: '#FFE4EE', 200: '#FFC9DC', 300: '#FFA8C5', 400: '#FF86AE', 500: '#F2668F' },
-            lilac: { 100: '#F1E8FF', 200: '#E0CCFF', 300: '#C9A9FF', 400: '#AE86F5', 500: '#8F66E0' },
-            mint: { 100: '#E3FBF2', 200: '#C2F2E0', 300: '#98E6CA', 400: '#6AD4AE', 500: '#3FB98F' },
-            ink: '#4A3B5C'
-          }
-        }
-      }
-    };
-  </script>
   <style>
     * { -webkit-tap-highlight-color: transparent; }
     body { font-family: 'Be Vietnam Pro', sans-serif; }
@@ -281,7 +265,7 @@
       { ratio: .2, icon: '😅', title: 'Ủa, mình quen nhau hả?', text: 'Còn nhiều điều để khám phá lắm nha. Hẹn đi ăn để “học bài” 🍜' },
       { ratio: 0, icon: '🫠', title: 'Người lạ ơi!', text: 'Chưa đúng ý chủ nhân lắm, nhưng tình bạn vẫn còn cứu được 😄' }
     ];
-    // Optional: set this when previewing locally to use the deployed Netlify domain.
+    // Optional: set this when previewing locally to use the deployed Vercel domain.
     const PUBLIC_BASE_URL = '';
     const DEFAULT_CONFIG = { id: '', ownerName: 'tui', allowRetry: true, showAnswers: true, secretMessage: '', secretThreshold: 80, questions: DEFAULT_QUESTIONS };
     const deepCopy = (value) => JSON.parse(JSON.stringify(value));
@@ -420,14 +404,19 @@
       catch (error) { console.error(`Không lưu được dữ liệu ${key}:`, error); toast('Không thể lưu trên trình duyệt này. Hãy kiểm tra dung lượng bộ nhớ.'); return false; }
     };
 
-    /* ---------- Link ngắn lưu trên Netlify DB ---------- */
+    /* ---------- Link ngắn lưu trên Vercel serverless + database ---------- */
     const shortCodeCache = storageGet('bhttn_short_codes', {}) || {};
     async function createShortUrl() {
       if (shortCodeCache[id]) {
         publishedCode = shortCodeCache[id];
         return buildShortUrl(publishedCode);
       }
-      const response = await fetch('/api/quiz', {
+
+      const apiUrl = window.location.protocol === 'file:'
+        ? `${window.location.origin || ''}/api/quiz`
+        : '/api/quiz';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
@@ -825,7 +814,7 @@
         await shareOrCopy(text, url);
       } catch (error) {
         console.error('Không thể tạo link quiz để chia sẻ:', error);
-        toast('Chưa tạo được link ngắn. Kiểm tra cấu hình Netlify DB rồi thử lại.');
+        toast('Chưa tạo được link ngắn. Kiểm tra cấu hình Vercel database rồi thử lại.');
       }
     });
 
@@ -914,7 +903,7 @@
         $('publishedScoresBtn').disabled = false;
         toast('Đã tạo link quiz 4 ký tự! 🎉');
       } catch (error) {
-        console.warn('Netlify link ngắn không khả dụng, tạo link tự chứa:', error);
+        console.warn('Link rút gọn Vercel không khả dụng, tạo link tự chứa:', error);
         try {
           publishedCode = '';
           publishedLink = await standaloneShareUrl();
@@ -923,7 +912,7 @@
           $('copyLinkBtn').disabled = false;
           $('shareLinkBtn').disabled = false;
           $('publishedScoresBtn').disabled = false;
-          toast('Đã tạo link tự chứa — hoạt động trên GitHub Pages và Netlify 💖');
+          toast('Đã tạo link tự chứa — hoạt động trên GitHub Pages và Vercel 💖');
         } catch (fallbackError) {
           console.error('Không thể mã hóa quiz để chia sẻ:', fallbackError);
           $('publishedUrl').value = 'Không thể tạo link chia sẻ trên trình duyệt này.';
