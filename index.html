@@ -190,6 +190,15 @@
           <button id="playPublishedBtn" type="button" class="mt-3 w-full rounded-3xl border-2 border-lilac-200 bg-white/80 py-3.5 font-display font-bold text-lilac-500">🎮 Chơi thử quiz này</button>
         </div>
       </section>
+
+      <section id="screen-link-error" class="screen flex-col">
+        <div class="glass-card rounded-[2rem] p-7 text-center sm:p-10">
+          <div class="text-6xl">🔎</div>
+          <h1 class="mt-3 font-display text-3xl font-extrabold">Không tìm thấy quiz</h1>
+          <p id="linkErrorText" class="mt-2 text-ink/65">Mã link có thể sai hoặc quiz đã bị gỡ.</p>
+          <button id="linkErrorHomeBtn" type="button" class="mt-6 w-full rounded-3xl bg-gradient-to-r from-blush-400 to-lilac-400 py-4 font-display text-lg font-bold text-white">Về trang chính 🏠</button>
+        </div>
+      </section>
     </div>
   </main>
   <div id="toast" role="status" aria-live="polite" class="pointer-events-none fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[70] -translate-x-1/2 translate-y-4 rounded-full bg-ink px-5 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition duration-300"></div>
@@ -225,8 +234,7 @@
       { ratio: .2, icon: '😅', title: 'Ủa, mình quen nhau hả?', text: 'Còn nhiều điều để khám phá lắm nha. Hẹn đi ăn để “học bài” 🍜' },
       { ratio: 0, icon: '🫠', title: 'Người lạ ơi!', text: 'Chưa đúng ý chủ nhân lắm, nhưng tình bạn vẫn còn cứu được 😄' }
     ];
-    // Điền địa chỉ web công khai của trang này (vd: 'https://tenban.github.io/quiz/').
-    // Để trống thì dùng địa chỉ đang mở. Đang chạy 127.0.0.1/localhost thì NÊN điền để link rút gọn dùng được.
+    // Optional: set this when previewing locally to use the deployed Netlify domain.
     const PUBLIC_BASE_URL = '';
     const DEFAULT_CONFIG = { ownerName: 'tui', allowRetry: true, showAnswers: true, secretMessage: '', secretThreshold: 80, questions: DEFAULT_QUESTIONS };
     const deepCopy = (value) => JSON.parse(JSON.stringify(value));
@@ -329,38 +337,29 @@
       catch (error) { console.error(`Không lưu được dữ liệu ${key}:`, error); toast('Không thể lưu trên trình duyệt này. Hãy kiểm tra dung lượng bộ nhớ.'); return false; }
     };
 
-    /* ---------- Rút gọn link bằng is.gd (có dự phòng) ---------- */
-    const shortCache = storageGet('bhttn_short_cache', {}) || {};
-    async function shortenUrl(longUrl) {
-      if (shortCache[longUrl]) return shortCache[longUrl];
-      if (!/^https?:\/\//.test(longUrl) || /^https?:\/\/(localhost|127\.|192\.168\.|10\.)/.test(longUrl)) return longUrl;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
-      try {
-        // Tên link mong muốn: is.gd/ban_hieu_tui_the_nao (is.gd không cho dấu gạch ngang, chỉ chữ/số/gạch dưới).
-        // Mỗi tên chỉ gắn được với 1 quiz, nên nếu đã có người dùng thì thêm đuôi ngẫu nhiên ngắn.
-        const BASE = 'ban_hieu_tui_the_nao';
-        const rand = () => Math.random().toString(36).slice(2, 6);
-        const aliases = [BASE, `${BASE}_${rand()}`, `${BASE}_${rand()}`, ''];
-        let data = null;
-        for (const alias of aliases) {
-          const api = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}${alias ? `&shorturl=${alias}` : ''}`;
-          const response = await fetch(api, { signal: controller.signal });
-          data = await response.json();
-          if (data && typeof data.shorturl === 'string') break;
-        }
-        if (data && typeof data.shorturl === 'string' && data.shorturl.startsWith('http')) {
-          shortCache[longUrl] = data.shorturl;
-          const keys = Object.keys(shortCache);
-          if (keys.length > 30) delete shortCache[keys[0]];
-          try { localStorage.setItem('bhttn_short_cache', JSON.stringify(shortCache)); } catch (error) { /* bỏ qua */ }
-          return data.shorturl;
-        }
-        console.warn('Dịch vụ rút gọn link không trả về link hợp lệ:', data);
-      } catch (error) {
-        console.warn('Không rút gọn được link, dùng link đầy đủ:', error);
-      } finally { clearTimeout(timer); }
-      return longUrl;
+    /* ---------- Link ngắn lưu trên Netlify DB ---------- */
+    const shortCodeCache = storageGet('bhttn_short_codes', {}) || {};
+    async function createShortUrl() {
+      if (shortCodeCache[id]) return buildShortUrl(shortCodeCache[id]);
+      const response = await fetch('/api/quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+      const result = await response.json();
+      if (!response.ok || !/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/.test(result.code || '')) {
+        throw new Error(result.error || 'Không thể tạo mã quiz ngắn.');
+      }
+      shortCodeCache[id] = result.code;
+      storageSet('bhttn_short_codes', shortCodeCache);
+      return buildShortUrl(result.code);
+    }
+    function buildShortUrl(code) {
+      const url = new URL(PUBLIC_BASE_URL || window.location.href);
+      url.search = '';
+      url.hash = '';
+      url.searchParams.set('s', code);
+      return url.toString();
     }
 
     const Sound = (() => {
@@ -622,11 +621,16 @@
     $('retryBtn').addEventListener('click', () => { Sound.pop(); beginQuiz(); });
     $('creatorLoopBtn').addEventListener('click', () => { Sound.pop(); openCreator(); });
     $('shareBtn').addEventListener('click', async () => {
-      toast('Đang chuẩn bị link gọn… ⏳');
-      const url = await currentShareUrl();
-      const result = displayedResult || { name: playerName, avatar: playerAvatar, score, total: config.questions.length };
-      const text = `${result.avatar} ${result.name} được ${result.score}/${result.total} điểm trong quiz của ${config.ownerName}! Thử xem bạn hiểu ${config.ownerName} tới đâu 💖`;
-      await shareOrCopy(text, url);
+      try {
+        toast('Đang chuẩn bị link gọn… ⏳');
+        const url = await currentShareUrl();
+        const result = displayedResult || { name: playerName, avatar: playerAvatar, score, total: config.questions.length };
+        const text = `${result.avatar} ${result.name} được ${result.score}/${result.total} điểm trong quiz của ${config.ownerName}! Thử xem bạn hiểu ${config.ownerName} tới đâu 💖`;
+        await shareOrCopy(text, url);
+      } catch (error) {
+        console.error('Không thể tạo link quiz để chia sẻ:', error);
+        toast('Chưa tạo được link ngắn. Kiểm tra cấu hình Netlify DB rồi thử lại.');
+      }
     });
 
     function openCreator() {
@@ -674,16 +678,8 @@
     });
     $('backToResultBtn').addEventListener('click', () => showScreen('screen-result'));
 
-    async function longShareUrl() {
-      const encoded = await encodeQuiz(config);
-      const url = new URL(PUBLIC_BASE_URL || window.location.href);
-      url.hash = '';
-      url.search = '';
-      url.searchParams.set('q', encoded);
-      return url.toString();
-    }
     async function currentShareUrl() {
-      return shortenUrl(await longShareUrl());
+      return createShortUrl();
     }
     async function publishQuiz() {
       const ownerName = $('ownerInput').value.trim();
@@ -697,22 +693,25 @@
       });
       id = quizId(config);
       storageSet(`bhttn_quiz_${id}`, config);
-      let longLink;
-      try { longLink = await longShareUrl(); }
-      catch (error) { console.error('Không thể mã hóa quiz để chia sẻ:', error); toast('Không thể tạo dữ liệu chia sẻ. Hãy thử lại trên trình duyệt khác.'); return; }
-      history.replaceState({}, '', longLink);
-      publishedLink = longLink;
-      $('publishedUrl').value = 'Đang rút gọn link…';
+      $('publishedUrl').value = 'Đang tạo link 4 ký tự…';
       $('copyLinkBtn').disabled = true;
       $('shareLinkBtn').disabled = true;
       showScreen('screen-published');
       Sound.victory();
-      const shortLink = await shortenUrl(longLink);
-      publishedLink = shortLink;
-      $('publishedUrl').value = shortLink;
-      $('copyLinkBtn').disabled = false;
-      $('shareLinkBtn').disabled = false;
-      if (shortLink === longLink && !shortCache[longLink]) toast('Chưa rút gọn được, đang dùng link đầy đủ.');
+      try {
+        publishedLink = await createShortUrl();
+        history.replaceState({}, '', publishedLink);
+        $('publishedUrl').value = publishedLink;
+        $('copyLinkBtn').disabled = false;
+        $('shareLinkBtn').disabled = false;
+        toast('Đã tạo link quiz 4 ký tự! 🎉');
+      } catch (error) {
+        console.error('Không thể tạo link quiz ngắn:', error);
+        $('publishedUrl').value = 'Hãy triển khai site và Netlify DB trước khi tạo link ngắn.';
+        $('copyLinkBtn').disabled = true;
+        $('shareLinkBtn').disabled = true;
+        toast('Chưa tạo được link ngắn. Kiểm tra cấu hình Netlify DB rồi thử lại.');
+      }
     }
     $('publishBtn').addEventListener('click', publishQuiz);
     async function copyText(text) {
@@ -756,6 +755,12 @@
       if (attempt) { renderResult(attempt, false); toast('Bạn đã hoàn thành quiz này trên trình duyệt rồi nha.'); }
       else startNameFlow();
     });
+    $('linkErrorHomeBtn').addEventListener('click', () => {
+      const url = new URL(window.location.href);
+      url.search = '';
+      url.hash = '';
+      window.location.assign(url);
+    });
 
     $('soundBtn').addEventListener('click', () => {
       Sound.toggle();
@@ -768,9 +773,31 @@
 
     async function initialize() {
       const params = new URLSearchParams(window.location.search);
+      const shortCode = params.get('s');
       const encoded = params.get('q');
       const legacyEncoded = params.get('quiz');
-      if (encoded) {
+      if (shortCode) {
+        if (!/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/i.test(shortCode)) {
+          $('linkErrorText').textContent = 'Mã link không đúng định dạng.';
+          showScreen('screen-link-error');
+          return;
+        }
+        try {
+          const endpoint = new URL('/api/quiz', window.location.origin);
+          endpoint.searchParams.set('id', shortCode.toUpperCase());
+          const response = await fetch(endpoint);
+          const result = await response.json();
+          if (!response.ok || !result.quiz) throw new Error(result.error || `HTTP ${response.status}`);
+          config = normalizeConfig(result.quiz);
+          id = quizId(config);
+          storageSet(`bhttn_quiz_${id}`, config);
+        } catch (error) {
+          console.error('Không thể tải quiz theo mã ngắn:', error);
+          $('linkErrorText').textContent = 'Không tải được quiz này. Mã có thể không tồn tại hoặc dịch vụ đang tạm gián đoạn.';
+          showScreen('screen-link-error');
+          return;
+        }
+      } else if (encoded) {
         try {
           config = await decodeQuiz(encoded);
           id = quizId(config);
@@ -807,7 +834,8 @@
     }
     initialize().catch((error) => {
       console.error('Không thể khởi tạo mini-quiz:', error);
-      toast('Ứng dụng gặp lỗi khi khởi động. Hãy tải lại trang.');
+      $('linkErrorText').textContent = 'Ứng dụng gặp lỗi khi khởi động. Hãy tải lại trang sau ít phút.';
+      showScreen('screen-link-error');
     });
   })();
   </script>
