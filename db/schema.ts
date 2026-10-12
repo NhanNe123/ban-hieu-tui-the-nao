@@ -2,7 +2,7 @@ import { index, pgTable, serial, text, integer, timestamp, jsonb } from "drizzle
 
 export const scores = pgTable("scores", {
   id: serial().primaryKey(),
-  quizId: text("quiz_id"),
+  quizId: text("quiz_id").notNull(),
   name: text().notNull(),
   avatar: text().notNull().default("🙂"),
   score: integer().notNull(),
