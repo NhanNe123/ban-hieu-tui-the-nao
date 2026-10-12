@@ -4,16 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#fff8ee">
-  <meta name="description" content="Mini-quiz pastel cute: Bạn hiểu tui đến mức nào?">
+  <meta name="description" content="Làm thử bài quiz nhỏ này xem mức độ thấu hiểu của tụi mình tới đâu nha!">
   <title>Bạn hiểu tui thế nào? 💖</title>
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ban-hieu-tui-the-nao.vercel.app/">
   <meta property="og:title" content="Bạn hiểu tui thế nào? 💖">
-  <meta property="og:description" content="Tui vừa tạo một chiếc quiz siêu dễ thương. Thử xem bạn hiểu tui đến mức nào nha!">
+  <meta property="og:description" content="Làm thử bài quiz nhỏ này xem mức độ thấu hiểu của tụi mình tới đâu nha!">
   <meta property="og:image" content="https://ban-hieu-tui-the-nao.vercel.app/quiz-cover.png">
+  <meta property="og:image:secure_url" content="https://ban-hieu-tui-the-nao.vercel.app/quiz-cover.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Mèo con đội mũ hồng ăn bánh donut đáng yêu">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Bạn hiểu tui thế nào? 💖">
-  <meta name="twitter:description" content="Thử thách bạn bè với chiếc quiz siêu dễ thương này nha!">
+  <meta name="twitter:description" content="Làm thử bài quiz nhỏ này xem mức độ thấu hiểu của tụi mình tới đâu nha!">
   <meta name="twitter:image" content="https://ban-hieu-tui-the-nao.vercel.app/quiz-cover.png">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💖</text></svg>">
   <link rel="stylesheet" href="./styles.css">
@@ -1024,6 +1029,7 @@
       const scoresCode = params.get('scores');
       const encoded = params.get('q');
       const legacyEncoded = params.get('quiz');
+      let openingSharedQuiz = false;
       if (scoresCode && !/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/i.test(scoresCode)) {
         if (!/^[a-z0-9]{6,20}$/i.test(scoresCode)) {
           $('linkErrorText').textContent = 'Mã link không đúng định dạng.';
@@ -1052,6 +1058,7 @@
           publishedCode = code;
           publishedLink = buildShortUrl(code);
           storageSet(`bhttn_quiz_${id}`, config);
+          openingSharedQuiz = true;
         } catch (error) {
           console.error('Không thể tải quiz theo mã ngắn:', error);
           $('linkErrorText').textContent = 'Không tải được quiz này. Mã có thể không tồn tại hoặc dịch vụ đang tạm gián đoạn.';
@@ -1067,6 +1074,7 @@
           config = await decodeQuiz(encoded);
           id = quizId(config);
           storageSet(`bhttn_quiz_${id}`, config);
+          openingSharedQuiz = true;
         } catch (error) {
           console.error('Link quiz không hợp lệ hoặc không thể giải mã:', error);
           toast('Link quiz bị lỗi hoặc không tương thích. Đang mở quiz mặc định.');
@@ -1079,6 +1087,7 @@
           catch { config = legacyQuiz(legacyEncoded); }
           id = quizId(config);
           storageSet(`bhttn_quiz_${id}`, config);
+          openingSharedQuiz = true;
         } catch (error) {
           console.error('Không thể đọc link quiz cũ:', error);
           $('linkErrorText').textContent = 'Link quiz không hợp lệ hoặc đã bị cắt mất dữ liệu.';
@@ -1103,7 +1112,7 @@
         playerName = attempt.name || playerName;
         playerAvatar = attempt.avatar || playerAvatar;
         renderResult(attempt, false);
-      } else showScreen('screen-home');
+      } else showScreen(openingSharedQuiz ? 'screen-story' : 'screen-home');
     }
     initialize().catch((error) => {
       console.error('Không thể khởi tạo mini-quiz:', error);
