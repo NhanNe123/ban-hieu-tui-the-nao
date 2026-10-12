@@ -7,7 +7,6 @@
   <meta name="description" content="Làm thử bài quiz nhỏ này xem mức độ thấu hiểu của tụi mình tới đâu nha!">
   <title>Bạn hiểu tui thế nào? 💖</title>
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://ban-hieu-tui-the-nao.vercel.app/">
   <meta property="og:title" content="Bạn hiểu tui thế nào? 💖">
   <meta property="og:description" content="Làm thử bài quiz nhỏ này xem mức độ thấu hiểu của tụi mình tới đâu nha!">
   <meta property="og:image" content="https://ban-hieu-tui-the-nao.vercel.app/quiz-cover.png">
@@ -137,19 +136,18 @@
             <p id="resultMsg" class="mt-2 leading-relaxed text-ink/70"></p>
           </div>
           <div id="secretBox" class="relative mt-6 rounded-3xl border border-white bg-white/65 p-4 text-left"></div>
+          <section class="relative mt-6 rounded-3xl border border-white bg-white/55 p-4 text-left sm:p-5">
+            <div class="mb-4 flex items-center justify-between gap-2">
+              <h3 class="font-display text-2xl font-extrabold">🏅 Bảng vàng</h3>
+            </div>
+            <ol id="leaderboard" class="space-y-2" aria-live="polite"></ol>
+          </section>
           <div class="relative mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button id="retryBtn" type="button" class="hidden rounded-3xl border-2 border-lilac-200 bg-white/85 py-3.5 font-display text-lg font-bold text-lilac-500">🔁 Chơi lại</button>
             <button id="creatorLoopBtn" type="button" class="heartbeat col-span-1 rounded-3xl border border-white bg-gradient-to-r from-[#ffe5f0] via-white to-[#e7e8ff] px-4 py-4 font-display text-lg font-extrabold text-ink shadow-lg shadow-lilac-200/50 sm:col-span-2">✍️ Tạo câu hỏi mới</button>
           </div>
           <button id="homeBtn" type="button" class="relative mt-3 w-full rounded-2xl border border-lilac-100 bg-white/65 py-3 font-semibold text-ink/65 transition hover:bg-white">🏠 Quay lại trang chủ</button>
         </article>
-        <section class="glass-card rounded-[2rem] p-5 sm:p-7">
-          <div class="mb-4 flex items-center justify-between">
-            <h3 class="font-display text-2xl font-extrabold">🏅 Bảng vàng</h3>
-            <span id="lbSource" class="rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-ink/50">📱 Trên máy này</span>
-          </div>
-          <ol id="leaderboard" class="space-y-2"></ol>
-        </section>
       </section>
 
       <section id="screen-creator" class="screen flex-col">
