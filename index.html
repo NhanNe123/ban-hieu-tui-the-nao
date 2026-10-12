@@ -47,6 +47,8 @@
     .float-heart { position: fixed; z-index: 60; pointer-events: none; font-size: 22px; animation: float-up 1.2s ease-out forwards; }
     @keyframes float-up { to { opacity: 0; transform: translateY(-100px) scale(1.35); } }
     .avatar-choice[aria-pressed="true"] { border-color: #f2668f; background: #ffe4ee; box-shadow: 0 0 0 3px rgba(242,102,143,.14); transform: translateY(-2px); }
+    .answer-option[aria-pressed="true"] { border-color: #ae86f5; background: #f1e8ff; box-shadow: 0 0 0 3px rgba(174,134,245,.2); }
+    .answer-option[aria-pressed="true"] .option-letter { background: #ae86f5; color: #fff; }
     .toggle input { position: absolute; opacity: 0; }
     .toggle-track { width: 48px; height: 28px; border-radius: 99px; background: #d8d0df; transition: .2s; }
     .toggle-track::after { content: ""; display: block; width: 22px; height: 22px; margin: 3px; border-radius: 99px; background: white; box-shadow: 0 1px 4px #0002; transition: .2s; }
@@ -102,7 +104,7 @@
           <div class="mb-6 h-2.5 overflow-hidden rounded-full bg-white/80"><div id="qProgress" class="h-full rounded-full bg-gradient-to-r from-blush-300 via-lilac-300 to-mint-300 transition-all duration-500" style="width:0"></div></div>
           <div id="qBody"></div>
           <div id="qFeedback" class="mt-4 min-h-14 text-center" aria-live="polite"></div>
-          <button id="nextQBtn" type="button" disabled class="mt-2 w-full rounded-3xl bg-gradient-to-r from-blush-400 to-lilac-400 py-4 font-display text-xl font-bold text-white shadow-lg transition enabled:hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40">Câu tiếp theo →</button>
+          <button id="nextQBtn" type="button" disabled class="mt-2 w-full rounded-3xl bg-gradient-to-r from-blush-400 to-lilac-400 py-4 font-display text-xl font-bold text-white shadow-lg transition enabled:hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40">Chọn một đáp án</button>
         </div>
       </section>
 
@@ -182,8 +184,8 @@
           <p class="mt-2 text-sm text-ink/60">Ai mở link cũng nhận đúng câu hỏi và luật chơi của bạn.</p>
           <input id="publishedUrl" readonly class="mt-5 w-full rounded-2xl border border-lilac-200 bg-white px-3 py-3 text-sm text-ink/75">
           <div class="mt-4 grid gap-3 sm:grid-cols-2">
-            <button id="copyLinkBtn" type="button" class="rounded-3xl bg-mint-100 py-3.5 font-display font-bold text-mint-500">📋 Copy link</button>
-            <button id="shareLinkBtn" type="button" class="rounded-3xl bg-gradient-to-r from-lilac-400 to-blush-400 py-3.5 font-display font-bold text-white">📤 Chia sẻ ngay</button>
+            <button id="copyLinkBtn" type="button" class="rounded-3xl bg-mint-100 py-3.5 font-display font-bold text-mint-500 disabled:opacity-50">📋 Copy link</button>
+            <button id="shareLinkBtn" type="button" class="rounded-3xl bg-gradient-to-r from-lilac-400 to-blush-400 py-3.5 font-display font-bold text-white disabled:opacity-50">📤 Chia sẻ ngay</button>
           </div>
           <button id="playPublishedBtn" type="button" class="mt-3 w-full rounded-3xl border-2 border-lilac-200 bg-white/80 py-3.5 font-display font-bold text-lilac-500">🎮 Chơi thử quiz này</button>
         </div>
@@ -223,6 +225,9 @@
       { ratio: .2, icon: '😅', title: 'Ủa, mình quen nhau hả?', text: 'Còn nhiều điều để khám phá lắm nha. Hẹn đi ăn để “học bài” 🍜' },
       { ratio: 0, icon: '🫠', title: 'Người lạ ơi!', text: 'Chưa đúng ý chủ nhân lắm, nhưng tình bạn vẫn còn cứu được 😄' }
     ];
+    // Điền địa chỉ web công khai của trang này (vd: 'https://tenban.github.io/quiz/').
+    // Để trống thì dùng địa chỉ đang mở. Đang chạy 127.0.0.1/localhost thì NÊN điền để link rút gọn dùng được.
+    const PUBLIC_BASE_URL = '';
     const DEFAULT_CONFIG = { ownerName: 'tui', allowRetry: true, showAnswers: true, secretMessage: '', secretThreshold: 80, questions: DEFAULT_QUESTIONS };
     const deepCopy = (value) => JSON.parse(JSON.stringify(value));
 
@@ -247,6 +252,20 @@
         questions: value.questions.map((q) => ({ q: q.q.trim().slice(0, 180), emoji: q.emoji.slice(0, 8) || '✨', options: q.options.map((o) => o.trim().slice(0, 120)), answer: q.answer, note: String(q.note || '').slice(0, 180) }))
       };
     }
+
+    /* ---------- Mã hóa link (dạng gọn) ---------- */
+    // Dạng mảng thay vì object: bỏ toàn bộ tên khóa JSON lặp đi lặp lại.
+    function toCompact(c) {
+      return [c.ownerName, c.allowRetry ? 1 : 0, c.showAnswers ? 1 : 0, c.secretMessage, c.secretThreshold,
+        c.questions.map((x) => [x.q, x.emoji, x.options, x.answer, x.note])];
+    }
+    function fromCompact(a) {
+      if (!Array.isArray(a) || !Array.isArray(a[5])) throw new Error('Bộ quiz trong link không hợp lệ.');
+      return normalizeConfig({
+        ownerName: a[0], allowRetry: a[1] !== 0, showAnswers: a[2] !== 0, secretMessage: a[3], secretThreshold: a[4],
+        questions: a[5].map((x) => ({ q: x[0], emoji: x[1], options: x[2], answer: x[3], note: x[4] }))
+      });
+    }
     function encodeBase64Url(bytes) {
       let binary = '';
       for (let offset = 0; offset < bytes.length; offset += 0x8000) {
@@ -265,20 +284,27 @@
       const stream = new Blob([bytes]).stream().pipeThrough(new Transformer(format));
       return new Uint8Array(await new Response(stream).arrayBuffer());
     }
+    // Tiền tố: z = deflate-raw (gọn nhất), v = JSON gọn không nén,
+    // g/u = định dạng cũ (vẫn đọc được để link cũ không bị hỏng).
     async function encodeQuiz(config) {
-      const bytes = new TextEncoder().encode(JSON.stringify(config));
+      const raw = new TextEncoder().encode(JSON.stringify(toCompact(config)));
+      let best = `v${encodeBase64Url(raw)}`;
       if ('CompressionStream' in window) {
-        try { return `g${encodeBase64Url(await streamTransform(bytes, 'gzip', 'compress'))}`; }
-        catch (error) { console.warn('Không nén được quiz, dùng Base64 UTF-8 thường:', error); }
+        try {
+          const packed = `z${encodeBase64Url(await streamTransform(raw, 'deflate-raw', 'compress'))}`;
+          if (packed.length < best.length) best = packed;
+        } catch (error) { console.warn('Không nén được quiz, dùng dạng thường:', error); }
       }
-      return `u${encodeBase64Url(bytes)}`;
+      return best;
     }
     async function decodeQuiz(encoded) {
       const prefix = encoded.slice(0, 1);
-      let bytes = decodeBase64Url(prefix === 'g' || prefix === 'u' ? encoded.slice(1) : encoded);
+      const hasPrefix = ['g', 'u', 'z', 'v'].includes(prefix);
+      let bytes = decodeBase64Url(hasPrefix ? encoded.slice(1) : encoded);
       if (prefix === 'g') bytes = await streamTransform(bytes, 'gzip', 'decompress');
+      if (prefix === 'z') bytes = await streamTransform(bytes, 'deflate-raw', 'decompress');
       const parsed = JSON.parse(new TextDecoder().decode(bytes));
-      return normalizeConfig(parsed);
+      return (prefix === 'z' || prefix === 'v') ? fromCompact(parsed) : normalizeConfig(parsed);
     }
     function legacyQuiz(encoded) {
       const binary = atob(encoded);
@@ -302,6 +328,40 @@
       try { localStorage.setItem(key, JSON.stringify(value)); return true; }
       catch (error) { console.error(`Không lưu được dữ liệu ${key}:`, error); toast('Không thể lưu trên trình duyệt này. Hãy kiểm tra dung lượng bộ nhớ.'); return false; }
     };
+
+    /* ---------- Rút gọn link bằng is.gd (có dự phòng) ---------- */
+    const shortCache = storageGet('bhttn_short_cache', {}) || {};
+    async function shortenUrl(longUrl) {
+      if (shortCache[longUrl]) return shortCache[longUrl];
+      if (!/^https?:\/\//.test(longUrl) || /^https?:\/\/(localhost|127\.|192\.168\.|10\.)/.test(longUrl)) return longUrl;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 12000);
+      try {
+        // Tên link mong muốn: is.gd/ban_hieu_tui_the_nao (is.gd không cho dấu gạch ngang, chỉ chữ/số/gạch dưới).
+        // Mỗi tên chỉ gắn được với 1 quiz, nên nếu đã có người dùng thì thêm đuôi ngẫu nhiên ngắn.
+        const BASE = 'ban_hieu_tui_the_nao';
+        const rand = () => Math.random().toString(36).slice(2, 6);
+        const aliases = [BASE, `${BASE}_${rand()}`, `${BASE}_${rand()}`, ''];
+        let data = null;
+        for (const alias of aliases) {
+          const api = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}${alias ? `&shorturl=${alias}` : ''}`;
+          const response = await fetch(api, { signal: controller.signal });
+          data = await response.json();
+          if (data && typeof data.shorturl === 'string') break;
+        }
+        if (data && typeof data.shorturl === 'string' && data.shorturl.startsWith('http')) {
+          shortCache[longUrl] = data.shorturl;
+          const keys = Object.keys(shortCache);
+          if (keys.length > 30) delete shortCache[keys[0]];
+          try { localStorage.setItem('bhttn_short_cache', JSON.stringify(shortCache)); } catch (error) { /* bỏ qua */ }
+          return data.shorturl;
+        }
+        console.warn('Dịch vụ rút gọn link không trả về link hợp lệ:', data);
+      } catch (error) {
+        console.warn('Không rút gọn được link, dùng link đầy đủ:', error);
+      } finally { clearTimeout(timer); }
+      return longUrl;
+    }
 
     const Sound = (() => {
       let context = null;
@@ -384,7 +444,7 @@
     let currentStory = 0;
     let playerName = localStorage.getItem('bhttn_name') || '';
     let playerAvatar = localStorage.getItem('bhttn_avatar') || AVATARS[0];
-    let questionIndex = 0, score = 0, answerLocked = false;
+    let questionIndex = 0, score = 0, answerLocked = false, selectedOption = null;
     let publishedLink = '';
     let displayedResult = null;
     let storyCard = $('storyCard');
@@ -439,32 +499,43 @@
       showScreen('screen-quiz');
       renderQuestion();
     }
+    const nextLabel = () => questionIndex === config.questions.length - 1 ? 'Xem kết quả 🎉' : 'Câu tiếp theo →';
     function renderQuestion() {
       const question = config.questions[questionIndex];
       answerLocked = false;
+      selectedOption = null;
       $('qCounter').textContent = `Câu ${questionIndex + 1}/${config.questions.length}`;
       $('qScore').textContent = config.showAnswers ? `💖 ${score} điểm` : '✨ Cứ tự tin nhé';
       $('qProgress').style.width = `${questionIndex / config.questions.length * 100}%`;
       $('qFeedback').innerHTML = '';
       $('nextQBtn').disabled = true;
-      $('nextQBtn').textContent = questionIndex === config.questions.length - 1 ? 'Xem kết quả 🎉' : 'Câu tiếp theo →';
-      $('qBody').innerHTML = `<div class="text-center"><div class="bob inline-block text-6xl">${esc(question.emoji)}</div><h2 class="mb-6 mt-3 font-display text-2xl font-bold leading-snug sm:text-3xl">${esc(question.q)}</h2></div><div class="space-y-3">${question.options.map((option, index) => `<button type="button" data-option="${index}" class="answer-option flex w-full items-center gap-3 rounded-3xl border-2 border-white bg-white/80 px-4 py-3.5 text-left font-semibold transition hover:border-lilac-200 hover:bg-lilac-100/60 active:scale-[.98]"><span class="option-letter grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-blush-100 font-display font-bold text-blush-500">${'ABCD'[index]}</span><span class="flex-1">${esc(option)}</span><span class="option-mark text-xl"></span></button>`).join('')}</div>`;
-      $('qBody').querySelectorAll('.answer-option').forEach((button) => button.addEventListener('click', (event) => selectAnswer(Number(button.dataset.option), button, event)));
+      $('nextQBtn').textContent = 'Chọn một đáp án';
+      $('qBody').innerHTML = `<div class="text-center"><div class="bob inline-block text-6xl">${esc(question.emoji)}</div><h2 class="mb-6 mt-3 font-display text-2xl font-bold leading-snug sm:text-3xl">${esc(question.q)}</h2></div><div class="space-y-3">${question.options.map((option, index) => `<button type="button" data-option="${index}" aria-pressed="false" class="answer-option flex w-full items-center gap-3 rounded-3xl border-2 border-white bg-white/80 px-4 py-3.5 text-left font-semibold transition hover:border-lilac-200 hover:bg-lilac-100/60 active:scale-[.98]"><span class="option-letter grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-blush-100 font-display font-bold text-blush-500">${'ABCD'[index]}</span><span class="flex-1">${esc(option)}</span><span class="option-mark text-xl"></span></button>`).join('')}</div>`;
+      $('qBody').querySelectorAll('.answer-option').forEach((button) => button.addEventListener('click', () => selectAnswer(Number(button.dataset.option))));
     }
-    function selectAnswer(optionIndex, selectedButton, event) {
+    // Chạm vào đáp án = chỉ CHỌN (có thể đổi ý), chưa ghi nhận.
+    function selectAnswer(optionIndex) {
       if (answerLocked) return;
+      selectedOption = optionIndex;
+      Sound.tap();
+      $('qBody').querySelectorAll('.answer-option').forEach((button, index) => button.setAttribute('aria-pressed', String(index === optionIndex)));
+      $('nextQBtn').disabled = false;
+      $('nextQBtn').textContent = config.showAnswers ? 'Chốt đáp án ✔' : nextLabel();
+    }
+    // Bấm nút bên dưới = GHI NHẬN đáp án.
+    function commitAnswer() {
       answerLocked = true;
       const question = config.questions[questionIndex];
-      const correct = optionIndex === question.answer;
+      const correct = selectedOption === question.answer;
       if (correct) score++;
-      Sound.pop();
+      $('qBody').querySelectorAll('.answer-option').forEach((button) => button.setAttribute('aria-pressed', 'false'));
       if (config.showAnswers) {
         $('qBody').querySelectorAll('.answer-option').forEach((button, index) => {
           button.disabled = true;
           if (index === question.answer) {
             button.classList.add('border-mint-300', 'bg-mint-100');
             button.querySelector('.option-mark').textContent = '✅';
-          } else if (index === optionIndex) {
+          } else if (index === selectedOption) {
             button.classList.add('border-blush-300', 'bg-blush-100');
             button.querySelector('.option-mark').textContent = '❌';
           } else button.classList.add('opacity-50');
@@ -472,18 +543,20 @@
         $('qFeedback').innerHTML = `<p class="font-display text-lg font-bold ${correct ? 'text-mint-500' : 'text-blush-500'}">${correct ? 'Chuẩn không cần chỉnh! 🎯' : 'Hông phải rùi nha 🙈'}</p><p class="text-sm text-ink/60">${esc(question.note)}</p>`;
         if (correct) {
           Sound.correct();
-          const rect = selectedButton.getBoundingClientRect();
-          hearts(event.clientX || rect.left + rect.width / 2, event.clientY || rect.top);
+          const rect = $('nextQBtn').getBoundingClientRect();
+          hearts(rect.left + rect.width / 2, rect.top - 20);
         } else Sound.wrong();
         $('qScore').textContent = `💖 ${score} điểm`;
-      } else {
-        $('qBody').querySelectorAll('.answer-option').forEach((button) => { button.disabled = true; button.classList.add('opacity-70'); });
-        $('qFeedback').innerHTML = '<p class="font-display font-bold text-lilac-500">Đã ghi nhận lựa chọn của bạn ✨</p>';
+        $('nextQBtn').textContent = nextLabel();
       }
       $('qProgress').style.width = `${(questionIndex + 1) / config.questions.length * 100}%`;
-      $('nextQBtn').disabled = false;
     }
     $('nextQBtn').addEventListener('click', () => {
+      if (!answerLocked) {
+        if (selectedOption === null) return;
+        commitAnswer();
+        if (config.showAnswers) { Sound.tap(); return; } // hiện đáp án, bấm lần nữa để sang câu tiếp
+      }
       Sound.tap();
       if (questionIndex < config.questions.length - 1) { questionIndex++; renderQuestion(); }
       else finishQuiz();
@@ -549,6 +622,7 @@
     $('retryBtn').addEventListener('click', () => { Sound.pop(); beginQuiz(); });
     $('creatorLoopBtn').addEventListener('click', () => { Sound.pop(); openCreator(); });
     $('shareBtn').addEventListener('click', async () => {
+      toast('Đang chuẩn bị link gọn… ⏳');
       const url = await currentShareUrl();
       const result = displayedResult || { name: playerName, avatar: playerAvatar, score, total: config.questions.length };
       const text = `${result.avatar} ${result.name} được ${result.score}/${result.total} điểm trong quiz của ${config.ownerName}! Thử xem bạn hiểu ${config.ownerName} tới đâu 💖`;
@@ -600,6 +674,17 @@
     });
     $('backToResultBtn').addEventListener('click', () => showScreen('screen-result'));
 
+    async function longShareUrl() {
+      const encoded = await encodeQuiz(config);
+      const url = new URL(PUBLIC_BASE_URL || window.location.href);
+      url.hash = '';
+      url.search = '';
+      url.searchParams.set('q', encoded);
+      return url.toString();
+    }
+    async function currentShareUrl() {
+      return shortenUrl(await longShareUrl());
+    }
     async function publishQuiz() {
       const ownerName = $('ownerInput').value.trim();
       if (!ownerName) { toast('Điền tên chủ nhân quiz trước nha!'); $('ownerInput').focus(); return; }
@@ -612,28 +697,24 @@
       });
       id = quizId(config);
       storageSet(`bhttn_quiz_${id}`, config);
-      let encoded;
-      try { encoded = await encodeQuiz(config); }
+      let longLink;
+      try { longLink = await longShareUrl(); }
       catch (error) { console.error('Không thể mã hóa quiz để chia sẻ:', error); toast('Không thể tạo dữ liệu chia sẻ. Hãy thử lại trên trình duyệt khác.'); return; }
-      const url = new URL(window.location.href);
-      url.hash = '';
-      url.search = '';
-      url.searchParams.set('q', encoded);
-      publishedLink = url.toString();
-      history.replaceState({}, '', publishedLink);
-      $('publishedUrl').value = publishedLink;
+      history.replaceState({}, '', longLink);
+      publishedLink = longLink;
+      $('publishedUrl').value = 'Đang rút gọn link…';
+      $('copyLinkBtn').disabled = true;
+      $('shareLinkBtn').disabled = true;
       showScreen('screen-published');
       Sound.victory();
+      const shortLink = await shortenUrl(longLink);
+      publishedLink = shortLink;
+      $('publishedUrl').value = shortLink;
+      $('copyLinkBtn').disabled = false;
+      $('shareLinkBtn').disabled = false;
+      if (shortLink === longLink && !shortCache[longLink]) toast('Chưa rút gọn được, đang dùng link đầy đủ.');
     }
     $('publishBtn').addEventListener('click', publishQuiz);
-    async function currentShareUrl() {
-      const encoded = await encodeQuiz(config);
-      const url = new URL(window.location.href);
-      url.hash = '';
-      url.search = '';
-      url.searchParams.set('q', encoded);
-      return url.toString();
-    }
     async function copyText(text) {
       if (navigator.clipboard?.writeText) {
         try { await navigator.clipboard.writeText(text); return true; }
