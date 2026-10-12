@@ -140,9 +140,9 @@
           <div class="relative mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button id="retryBtn" type="button" class="hidden rounded-3xl border-2 border-lilac-200 bg-white/85 py-3.5 font-display text-lg font-bold text-lilac-500">🔁 Chơi lại</button>
             <button id="shareBtn" type="button" class="rounded-3xl bg-gradient-to-r from-mint-400 to-lilac-400 py-3.5 font-display text-lg font-bold text-white shadow-lg">📤 Khoe điểm & Rủ bạn bè</button>
-            <button id="creatorLoopBtn" type="button" class="heartbeat col-span-1 rounded-3xl border border-white bg-gradient-to-r from-[#ffe5f0] via-white to-[#e7e8ff] px-4 py-4 font-display text-lg font-extrabold text-ink shadow-lg shadow-lilac-200/50 sm:col-span-2">✨ Tạo Quiz về bản thân & Thách đấu lại bạn bè!</button>
+            <button id="creatorLoopBtn" type="button" class="heartbeat col-span-1 rounded-3xl border border-white bg-gradient-to-r from-[#ffe5f0] via-white to-[#e7e8ff] px-4 py-4 font-display text-lg font-extrabold text-ink shadow-lg shadow-lilac-200/50 sm:col-span-2">✍️ Tạo câu hỏi mới</button>
           </div>
-          <button id="homeBtn" type="button" class="relative mt-3 w-full rounded-2xl border border-lilac-100 bg-white/65 py-3 font-semibold text-ink/65 transition hover:bg-white">🏠 Về trang đầu</button>
+          <button id="homeBtn" type="button" class="relative mt-3 w-full rounded-2xl border border-lilac-100 bg-white/65 py-3 font-semibold text-ink/65 transition hover:bg-white">🏠 Quay lại trang chủ</button>
         </article>
         <section class="glass-card rounded-[2rem] p-5 sm:p-7">
           <div class="mb-4 flex items-center justify-between">
@@ -185,7 +185,6 @@
             <section>
               <div class="mb-3 flex items-center justify-between gap-2">
                 <div><h2 class="font-display text-xl font-bold">📝 Câu hỏi</h2><p class="text-xs text-ink/55">Tạo ít nhất 1 câu, mỗi câu có 4 đáp án.</p></div>
-                <button id="addQCreatorBtn" type="button" class="shrink-0 rounded-2xl bg-mint-100 px-3 py-2.5 text-sm font-bold text-mint-500">＋ Thêm câu</button>
               </div>
               <div id="creatorQuestionsList" class="space-y-3"></div>
             </section>
@@ -862,13 +861,13 @@
     }
     function renderCreatorQuestions() {
       const list = $('creatorQuestionsList');
-      list.innerHTML = ownerQuestions.map((question, questionIndex) => `<article class="rounded-3xl border-2 border-lilac-100 bg-white/80 p-4 shadow-sm">
+      list.innerHTML = ownerQuestions.map((question, questionIndex) => `<div class="space-y-2"><article class="rounded-3xl border-2 border-lilac-100 bg-white/80 p-4 shadow-sm">
         <div class="mb-3 flex items-center justify-between"><span class="rounded-full bg-lilac-100 px-3 py-1 font-display text-xs font-bold text-lilac-500">Câu ${questionIndex + 1}</span><button type="button" data-delete="${questionIndex}" class="rounded-xl bg-blush-100 px-3 py-2 text-xs font-bold text-blush-500">🗑️ Xóa</button></div>
         <div class="mb-3 grid grid-cols-[56px_1fr] gap-2"><label class="sr-only" for="emoji-${questionIndex}">Emoji câu ${questionIndex + 1}</label><input id="emoji-${questionIndex}" data-field="emoji" data-index="${questionIndex}" maxlength="8" value="${esc(question.emoji)}" class="rounded-xl border border-lilac-200 bg-white px-2 py-3 text-center text-xl outline-none focus:border-lilac-400"><label class="sr-only" for="question-${questionIndex}">Nội dung câu hỏi ${questionIndex + 1}</label><input id="question-${questionIndex}" data-field="q" data-index="${questionIndex}" maxlength="180" value="${esc(question.q)}" placeholder="Nội dung câu hỏi..." class="min-w-0 rounded-xl border border-lilac-200 bg-white px-3 py-3 text-sm outline-none focus:border-lilac-400"></div>
         <div class="mb-3"><p class="mb-1.5 text-xs font-bold text-ink/65">Gợi ý nhanh — chạm để rút câu ngẫu nhiên</p><div class="flex flex-wrap gap-1.5">${QUESTION_TEMPLATES.map((template) => `<button type="button" data-template="${template.id}" data-index="${questionIndex}" class="rounded-full border border-lilac-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-ink/70">${esc(template.label)}</button>`).join('')}</div></div>
         <fieldset class="space-y-2"><legend class="mb-2 text-xs font-bold text-ink/65">4 đáp án — chọn đáp án đúng</legend>${question.options.map((option, optionIndex) => `<label class="flex items-center gap-2"><input type="radio" name="correct-${questionIndex}" data-correct="${questionIndex}" value="${optionIndex}" ${question.answer === optionIndex ? 'checked' : ''} class="h-5 w-5 accent-blush-500"><span class="w-5 font-display font-bold text-lilac-500">${'ABCD'[optionIndex]}</span><input type="text" data-option="${optionIndex}" data-index="${questionIndex}" maxlength="120" value="${esc(option)}" placeholder="Đáp án ${'ABCD'[optionIndex]}" class="min-w-0 flex-1 rounded-xl border border-lilac-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-lilac-400"></label>`).join('')}</fieldset>
         <label class="mt-3 block text-xs font-semibold text-ink/65">Lời bình luận / giải thích<input data-field="note" data-index="${questionIndex}" maxlength="180" value="${esc(question.note || '')}" placeholder="Lời nhắn sau câu hỏi này (không bắt buộc)" class="mt-1.5 w-full rounded-xl border border-lilac-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-lilac-400"></label>
-      </article>`).join('');
+      </article><button type="button" data-add-after="${questionIndex}" ${ownerQuestions.length >= 15 ? 'disabled' : ''} class="w-full rounded-2xl border-2 border-dashed border-mint-200 bg-mint-50/70 px-3 py-2.5 text-sm font-bold text-mint-600 transition hover:bg-mint-100 disabled:cursor-not-allowed disabled:opacity-50">＋ Thêm câu hỏi bên dưới</button></div>`).join('');
       list.querySelectorAll('[data-field]').forEach((input) => input.addEventListener('input', () => { ownerQuestions[Number(input.dataset.index)][input.dataset.field] = input.value; }));
       list.querySelectorAll('[data-option]').forEach((input) => input.addEventListener('input', () => { ownerQuestions[Number(input.dataset.index)].options[Number(input.dataset.option)] = input.value; }));
       list.querySelectorAll('[data-correct]').forEach((input) => input.addEventListener('change', () => { ownerQuestions[Number(input.dataset.correct)].answer = Number(input.value); }));
@@ -877,6 +876,9 @@
         ownerQuestions.splice(Number(button.dataset.delete), 1);
         renderCreatorQuestions();
         Sound.tap();
+      }));
+      list.querySelectorAll('[data-add-after]').forEach((button) => button.addEventListener('click', () => {
+        addCreatorQuestion(Number(button.dataset.addAfter));
       }));
       list.querySelectorAll('[data-template]').forEach((button) => button.addEventListener('click', () => {
         const index = Number(button.dataset.index);
@@ -890,13 +892,15 @@
         Sound.pop();
       }));
     }
-    $('addQCreatorBtn').addEventListener('click', () => {
+    function addCreatorQuestion(afterIndex) {
       if (ownerQuestions.length >= 15) { toast('Mỗi quiz tạo tối đa 15 câu nha!'); return; }
-      ownerQuestions.push({ q: '', emoji: '✨', options: ['', '', '', ''], answer: 0, note: '' });
+      const newIndex = afterIndex + 1;
+      ownerQuestions.splice(newIndex, 0, { q: '', emoji: '✨', options: ['', '', '', ''], answer: 0, note: '' });
       renderCreatorQuestions();
-      $('creatorQuestionsList').lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      $(`question-${newIndex}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $(`question-${newIndex}`).focus({ preventScroll: true });
       Sound.pop();
-    });
+    }
     $('backToResultBtn').addEventListener('click', () => showScreen(creatorReturnScreen));
 
     async function currentShareUrl() {
@@ -926,7 +930,7 @@
       Sound.victory();
       try {
         publishedLink = await createShortUrl();
-        history.replaceState({}, '', publishedLink);
+        history.replaceState({ creatorQuizId: id }, '', publishedLink);
         $('publishedUrl').value = publishedLink;
         $('copyLinkBtn').disabled = false;
         $('shareLinkBtn').disabled = false;
@@ -937,7 +941,7 @@
         try {
           publishedCode = '';
           publishedLink = await standaloneShareUrl();
-          history.replaceState({}, '', publishedLink);
+          history.replaceState({ creatorQuizId: id }, '', publishedLink);
           $('publishedUrl').value = publishedLink;
           $('copyLinkBtn').disabled = false;
           $('shareLinkBtn').disabled = false;
@@ -1103,16 +1107,17 @@
       }
       if (!storageSet('bhttn_active_quiz', config)) toast('Quiz đang chạy nhưng trình duyệt không thể lưu bộ câu hỏi này.');
       renderStory();
+      const returningCreatorToHome = window.history.state?.creatorQuizId === id;
       if (window.location.hash === '#create') {
         openCreator('screen-home');
         return;
       }
       const attempt = config.allowRetry ? null : storageGet(attemptKey());
-      if (attempt && Number.isFinite(Number(attempt.score)) && Number.isFinite(Number(attempt.total))) {
+      if (!returningCreatorToHome && attempt && Number.isFinite(Number(attempt.score)) && Number.isFinite(Number(attempt.total))) {
         playerName = attempt.name || playerName;
         playerAvatar = attempt.avatar || playerAvatar;
         renderResult(attempt, false);
-      } else showScreen(openingSharedQuiz ? 'screen-story' : 'screen-home');
+      } else showScreen(openingSharedQuiz && !returningCreatorToHome ? 'screen-story' : 'screen-home');
     }
     initialize().catch((error) => {
       console.error('Không thể khởi tạo mini-quiz:', error);
