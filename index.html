@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Bạn hiểu tui thế nào? 💖</title>
+  <meta name="description" content="Mini-quiz siêu cute: Bạn hiểu tui đến mức nào?" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💖</text></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Baloo 2"', 'cursive'],
+            body: ['"Be Vietnam Pro"', 'sans-serif'],
+          },
+          colors: {
+            cream: '#FFF8EE',
+            blush: { 100: '#FFE4EE', 200: '#FFC9DC', 300: '#FFA8C5', 400: '#FF86AE', 500: '#F2668F' },
+            lilac: { 100: '#F1E8FF', 200: '#E0CCFF', 300: '#C9A9FF', 400: '#AE86F5', 500: '#8F66E0' },
+            mint: { 100: '#E3FBF2', 200: '#C2F2E0', 300: '#98E6CA', 400: '#6AD4AE', 500: '#3FB98F' },
+            ink: '#4A3B5C',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body { -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Be Vietnam Pro', sans-serif; }
+
+    /* Floating background blobs */
+    .blob { position: absolute; border-radius: 9999px; filter: blur(48px); opacity: .55; animation: drift 18s ease-in-out infinite; }
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -40px) scale(1.08); }
+      66% { transform: translate(-25px, 25px) scale(.95); }
+    }
+
+    /* Generic entrance animations */
+    .fade-up { animation: fadeUp .7s cubic-bezier(.2,.8,.2,1) both; }
+    .fade-in { animation: fadeIn .8s ease both; }
+    .slide-in-right { animation: slideInRight .6s cubic-bezier(.2,.8,.2,1) both; }
+    .pop-in { animation: popIn .6s cubic-bezier(.34,1.56,.64,1) both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+    @keyframes popIn { 0% { opacity: 0; transform: scale(.4) rotate(-10deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+    .d-1 { animation-delay: .15s; } .d-2 { animation-delay: .35s; } .d-3 { animation-delay: .55s; } .d-4 { animation-delay: .75s; }
+
+    /* Sticker animations */
+    .bob { animation: bob 2.6s ease-in-out infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-14px) rotate(4deg); } }
+    .wiggle { animation: wiggle 1.8s ease-in-out infinite; }
+    @keyframes wiggle { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+    .heartbeat { animation: heartbeat 1.4s ease-in-out infinite; }
+    @keyframes heartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.15); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
+    .rocket { animation: rocket 2.2s ease-in-out infinite; }
+    @keyframes rocket { 0%, 100% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(6px, -12px) rotate(-6deg); } }
+    .sparkle { position: absolute; animation: twinkle 2s ease-in-out infinite; }
+    @keyframes twinkle { 0%, 100% { opacity: .2; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.1); } }
+
+    /* Answer feedback */
+    .shake { animation: shake .45s ease; }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-7px); } 40%,80% { transform: translateX(7px); } }
+    .bounce-once { animation: bounceOnce .5s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes bounceOnce { 0% { transform: scale(1); } 40% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+    /* Story progress bars */
+    .story-bar > span { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #FF86AE, #AE86F5); transition: width .5s ease; }
+    .story-bar.done > span { width: 100%; }
+
+    /* Confetti */
+    .confetti { position: fixed; top: -12px; z-index: 60; pointer-events: none; border-radius: 3px; animation: fall linear forwards; }
+    @keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: .9; } }
+
+    /* Floating hearts on correct answer */
+    .float-heart { position: fixed; z-index: 60; pointer-events: none; font-size: 22px; animation: floatUp 1.2s ease-out forwards; }
+    @keyframes floatUp { from { opacity: 1; transform: translateY(0) scale(.8); } to { opacity: 0; transform: translateY(-110px) scale(1.4); } }
+
+    .screen { display: none; }
+    .screen.active { display: flex; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body class="min-h-[100dvh] bg-cream text-ink overflow-x-hidden">
+
+  <!-- Background -->
+  <div class="fixed inset-0 -z-10 overflow-hidden bg-gradient-to-br from-blush-100 via-cream to-lilac-100">
+    <div class="blob w-72 h-72 bg-blush-200 -top-16 -left-16"></div>
+    <div class="blob w-80 h-80 bg-lilac-200 top-1/3 -right-24" style="animation-delay:-6s"></div>
+    <div class="blob w-72 h-72 bg-mint-200 -bottom-20 left-1/4" style="animation-delay:-12s"></div>
+    <div class="absolute inset-0 opacity-[.35]" style="background-image: radial-gradient(#ffffff 1.2px, transparent 1.2px); background-size: 22px 22px;"></div>
+  </div>
+
+  <!-- Sound toggle -->
+  <button id="soundBtn" type="button" aria-label="Tắt âm thanh"
+    class="fixed z-50 top-[max(1rem,env(safe-area-inset-top))] right-4 w-12 h-12 rounded-full bg-white/70 backdrop-blur-md border border-white shadow-lg shadow-lilac-200/60 text-xl grid place-items-center hover:scale-110 active:scale-95 transition">
+    <span id="soundIcon">🔊</span>
+  </button>
+
+  <main class="min-h-[100dvh] w-full flex items-center justify-center px-4 py-20 sm:py-12">
+    <div class="w-full max-w-xl">
+
+      <!-- ============ STORY INTRO ============ -->
+      <section id="screen-story" class="screen active flex-col">
+        <div class="flex gap-2 mb-4 px-2" aria-hidden="true">
+          <div class="story-bar flex-1 h-1.5 rounded-full bg-white/70 overflow-hidden"><span></span></div>
+          <div class="story-bar flex-1 h-1.5 rounded-full bg-white/70 overflow-hidden"><span></span></div>
+          <div class="story-bar flex-1 h-1.5 rounded-full bg-white/70 overflow-hidden"><span></span></div>
+        </div>
+
+        <div id="storyCard" class="relative bg-white/60 backdrop-blur-xl border border-white/80 rounded-3xl shadow-2xl shadow-lilac-200/50 px-6 py-10 sm:px-10 sm:py-14 min-h-[440px] flex flex-col items-center justify-center text-center overflow-hidden cursor-pointer select-none">
+          <!-- slide content injected by JS -->
+        </div>
+
+        <div class="flex items-center justify-between mt-5 px-1">
+          <button id="skipBtn" type="button" class="text-sm font-semibold text-ink/50 hover:text-ink/80 transition px-3 py-2 rounded-full">Bỏ qua ⏭</button>
+          <button id="nextStoryBtn" type="button" class="font-display font-bold text-lg bg-white/80 backdrop-blur-md border border-white text-lilac-500 px-6 py-2.5 rounded-full shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition">Tiếp nè →</button>
+        </div>
+      </section>
+
+      <!-- ============ NAME ============ -->
+      <section id="screen-name" class="screen flex-col">
+        <div class="bg-white/60 backdrop-blur-xl border border-white/80 rounded-3xl shadow-2xl shadow-lilac-200/50 p-6 sm:p-10 text-center">
+          <div class="text-6xl mb-3 pop-in">🪪</div>
+          <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-ink fade-up d-1">Bạn là ai dọ?</h2>
+          <p class="text-ink/60 mt-1 fade-up d-2">Để tui ghi tên bạn lên Bảng vàng nha ✍️</p>
+          <form id="nameForm" class="mt-6 space-y-4 fade-up d-3">
+            <input id="playerName" type="text" maxlength="24" autocomplete="nickname" required
+              placeholder="Nhập tên / biệt danh của bạn..."
+              class="w-full text-center text-lg px-5 py-4 rounded-3xl bg-white/80 border-2 border-blush-200 focus:border-lilac-300 focus:ring-4 focus:ring-lilac-100 outline-none transition placeholder:text-ink/30" />
+            <button type="submit"
+              class="w-full font-display font-bold text-xl text-white py-4 rounded-3xl bg-gradient-to-r from-blush-400 to-lilac-400 shadow-lg shadow-blush-300/50 hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0 transition">
+              Vào thử thách thui 💪
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ============ QUIZ ============ -->
+      <section id="screen-quiz" class="screen flex-col">
+        <div class="bg-white/60 backdrop-blur-xl border border-white/80 rounded-3xl shadow-2xl shadow-lilac-200/50 p-5 sm:p-8">
+          <div class="flex items-center justify-between mb-3">
+            <span id="qCounter" class="font-display font-bold text-lilac-500 bg-lilac-100 px-3 py-1 rounded-full text-sm">Câu 1/5</span>
+            <span id="qScore" class="font-display font-bold text-mint-500 bg-mint-100 px-3 py-1 rounded-full text-sm">💖 0 điểm</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-white/80 overflow-hidden mb-6">
+            <div id="qProgress" class="h-full rounded-full bg-gradient-to-r from-blush-300 via-lilac-300 to-mint-300 transition-all duration-500" style="width:0%"></div>
+          </div>
+
+          <div id="qBody">
+            <!-- question injected by JS -->
+          </div>
+
+          <div id="qFeedback" class="min-h-[3.5rem] mt-4 text-center"></div>
+
+          <button id="nextQBtn" type="button" disabled
+            class="w-full mt-2 font-display font-bold text-xl text-white py-4 rounded-3xl bg-gradient-to-r from-blush-400 to-lilac-400 shadow-lg shadow-blush-300/50 transition enabled:hover:brightness-105 enabled:hover:-translate-y-0.5 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed">
+            Câu tiếp theo →
+          </button>
+        </div>
+      </section>
+
+      <!-- ============ RESULT ============ -->
+      <section id="screen-result" class="screen flex-col gap-5">
+        <div class="relative bg-white/60 backdrop-blur-xl border border-white/80 rounded-3xl shadow-2xl shadow-lilac-200/50 p-6 sm:p-10 text-center overflow-hidden">
+          <div id="resultEmoji" class="text-7xl sm:text-8xl pop-in">🏆</div>
+          <p class="mt-3 text-ink/60 font-semibold fade-up d-1"><span id="resultName"></span> đạt được</p>
+          <div class="font-display font-extrabold text-6xl sm:text-7xl bg-gradient-to-r from-blush-500 via-lilac-500 to-mint-500 bg-clip-text text-transparent fade-up d-2">
+            <span id="resultScore">0</span><span class="text-3xl sm:text-4xl">/<span id="resultTotal">5</span></span>
+          </div>
+          <h3 id="resultTitle" class="font-display font-bold text-2xl sm:text-3xl mt-2 fade-up d-3"></h3>
+          <p id="resultMsg" class="text-ink/70 mt-2 leading-relaxed fade-up d-4"></p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-7">
+            <button id="retryBtn" type="button" class="font-display font-bold text-lg py-3.5 rounded-3xl bg-white/80 border-2 border-lilac-200 text-lilac-500 hover:bg-lilac-100 transition">🔁 Chơi lại</button>
+            <button id="shareBtn" type="button" class="font-display font-bold text-lg py-3.5 rounded-3xl text-white bg-gradient-to-r from-mint-400 to-lilac-400 shadow-lg shadow-mint-300/50 hover:brightness-105 transition">📤 Rủ bạn bè</button>
+          </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="bg-white/60 backdrop-blur-xl border border-white/80 rounded-3xl shadow-xl shadow-blush-200/40 p-5 sm:p-8">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display font-extrabold text-2xl">🏅 Bảng vàng</h3>
+            <span id="lbSource" class="text-xs font-semibold text-ink/50 bg-white/70 px-2.5 py-1 rounded-full"></span>
+          </div>
+          <ol id="leaderboard" class="space-y-2"></ol>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed left-1/2 -translate-x-1/2 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 bg-ink text-white text-sm font-semibold px-5 py-3 rounded-full shadow-xl opacity-0 translate-y-4 pointer-events-none transition duration-300"></div>
+
+  <script>
+  (() => {
+    // ============================================================
+    //  ✏️ TUỲ CHỈNH Ở ĐÂY: tên chủ quiz + bộ câu hỏi
+    // ============================================================
+    const OWNER = 'tui';
+
+    const QUESTIONS = [
+      {
+        q: 'Món ăn mà tui có thể ăn 7 ngày liền không biết chán là gì?',
+        emoji: '🍜',
+        options: ['Bún bò Huế cay xé lưỡi', 'Trà sữa full topping (đồ uống cũng tính!)', 'Mì gói lúc 2h sáng', 'Rau luộc... đùa thui 🙂'],
+        answer: 2,
+        note: 'Mì gói 2h sáng là chân ái, không cãi 🌙',
+      },
+      {
+        q: 'Khi buồn, tui thường làm gì để "hồi máu"?',
+        emoji: '🥺',
+        options: ['Đi shopping online rồi... huỷ đơn', 'Ngủ một giấc 14 tiếng', 'Nghe nhạc buồn cho buồn thêm', 'Ăn. Chỉ đơn giản là ăn.'],
+        answer: 3,
+        note: 'Bụng no thì lòng mới vui được chứ 🍰',
+      },
+      {
+        q: 'Nếu là một con vật, tui sẽ là con gì?',
+        emoji: '🐾',
+        options: ['Mèo: lười nhưng sang chảnh', 'Cún: lúc nào cũng tăng động', 'Gấu trúc: ăn và ngủ là chính', 'Cá vàng: trí nhớ 3 giây'],
+        answer: 0,
+        note: 'Meo~ đúng rồi đó, sang chảnh lắm nha 😼',
+      },
+      {
+        q: 'Câu cửa miệng tui hay nói nhất là gì?',
+        emoji: '💬',
+        options: ['"Để mai tính"', '"Ủa alo?"', '"Đói quá à"', '"Hong sao đâu"'],
+        answer: 1,
+        note: '"Ủa alo?" — câu nói vạn năng mọi tình huống 📞',
+      },
+      {
+        q: 'Siêu năng lực tui ước có nhất là gì?',
+        emoji: '✨',
+        options: ['Dịch chuyển tức thời để khỏi kẹt xe', 'Ngủ 1 tiếng bằng 8 tiếng', 'Ăn hoài không mập', 'Đọc suy nghĩ crush'],
+        answer: 2,
+        note: 'Ăn không mập — giấc mơ của cả nhân loại 🙏',
+      },
+    ];
+
+    const STORY = [
+      {
+        sticker: '💌', anim: 'wiggle',
+        extras: ['✨', '💫', '⭐'],
+        title: 'Có một chiếc thử thách nhỏ vừa được gửi đến bạn...',
+        sub: 'Ting ting! Bạn có 1 thư mới nè 📬',
+      },
+      {
+        sticker: '🕵️', anim: 'bob',
+        extras: ['🔍', '💭', '❓'],
+        title: `Để xem bạn hiểu chủ nhân chiếc link này đến mức nào nha...`,
+        sub: '5 câu hỏi lầy lội đang chờ bạn đó 👀',
+      },
+      {
+        sticker: '🚀', anim: 'rocket',
+        extras: ['🌟', '🌈', '💖'],
+        title: 'Sẵn sàng chưa? Bắt đầu thui! 🚀',
+        sub: 'Trả lời thật lòng nha, tui biết hết đó 😌',
+        cta: true,
+      },
+    ];
+
+    const RESULTS = [
+      { min: 5, emoji: '👑', title: 'Tri kỷ cấp vũ trụ!', color: 'text-blush-500',
+        msg: `Trời ơi, bạn hiểu ${OWNER} còn hơn ${OWNER} hiểu bản thân nữa! Chắc kiếp trước mình là một cặp bánh bao nhân đôi 🥟💕` },
+      { min: 4, emoji: '🥰', title: 'Bạn thân chí cốt!', color: 'text-lilac-500',
+        msg: 'Gần như hoàn hảo luôn á! Sai một câu thôi là do ông trời muốn thử lòng mình đó 🌷' },
+      { min: 3, emoji: '😊', title: 'Cũng ra gì đó nha!', color: 'text-mint-500',
+        msg: 'Hiểu được hơn nửa rồi, đi cà phê với tui thêm vài bữa là thành chuyên gia liền ☕' },
+      { min: 1, emoji: '😅', title: 'Ủa, mình quen nhau hả?', color: 'text-lilac-500',
+        msg: 'Hơi bị sai nhiều á nha... Nhưng không sao, tình bạn mình vẫn còn cứu được! Hẹn đi ăn để "học bài" nhé 🍜' },
+      { min: 0, emoji: '🫠', title: 'Người lạ ơi!', color: 'text-blush-500',
+        msg: 'Không đúng câu nào luôn?! Tui buồn 3 giây rồi tha thứ á. Chơi lại liền cho tui! 😤💔' },
+    ];
+
+    // ============================================================
+    //  🔊 SOUND (Web Audio API — không cần file ngoài)
+    // ============================================================
+    const Sound = (() => {
+      let ctx = null;
+      let muted = localStorage.getItem('bhttn_muted') === '1';
+
+      const ensure = () => {
+        if (!ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          ctx = new AC();
+        }
+        if (ctx.state === 'suspended') ctx.resume();
+        return ctx;
+      };
+
+      const tone = (freq, start, dur, { type = 'sine', vol = .25, slideTo = null } = {}) => {
+        const c = ensure(); if (!c || muted) return;
+        const t = c.currentTime + start;
+        const o = c.createOscillator();
+        const g = c.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t);
+        if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(c.destination);
+        o.start(t); o.stop(t + dur + 0.02);
+      };
+
+      const noiseBurst = (start, dur, vol) => {
+        const c = ensure(); if (!c || muted) return;
+        const t = c.currentTime + start;
+        const buf = c.createBuffer(1, Math.floor(c.sampleRate * dur), c.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+        const src = c.createBufferSource();
+        src.buffer = buf;
+        const bp = c.createBiquadFilter();
+        bp.type = 'bandpass'; bp.frequency.value = 1400 + Math.random() * 900; bp.Q.value = 1.1;
+        const g = c.createGain(); g.gain.value = vol;
+        src.connect(bp).connect(g).connect(c.destination);
+        src.start(t);
+      };
+
+      return {
+        get muted() { return muted; },
+        toggle() { muted = !muted; localStorage.setItem('bhttn_muted', muted ? '1' : '0'); if (!muted) this.pop(); return muted; },
+        unlock: ensure,
+        pop() { tone(520, 0, .12, { type: 'sine', vol: .3, slideTo: 1100 }); },
+        tap() { tone(880, 0, .07, { type: 'triangle', vol: .18 }); },
+        ting() { tone(1318.5, 0, .35, { type: 'sine', vol: .22 }); tone(1975.5, .06, .4, { type: 'sine', vol: .14 }); },
+        correct() {
+          [784, 988, 1175, 1568].forEach((f, i) => tone(f, i * .08, .22, { type: 'triangle', vol: .22 }));
+          tone(2093, .32, .5, { type: 'sine', vol: .12 });
+        },
+        wrong() { tone(330, 0, .18, { type: 'square', vol: .08, slideTo: 260 }); tone(247, .16, .3, { type: 'square', vol: .08, slideTo: 196 }); },
+        whoosh() { tone(300, 0, .25, { type: 'sine', vol: .12, slideTo: 900 }); },
+        victory() {
+          const melody = [[523, 0], [659, .12], [784, .24], [1047, .36], [784, .52], [1047, .64]];
+          melody.forEach(([f, t]) => { tone(f, t, .28, { type: 'triangle', vol: .22 }); tone(f * 2, t, .2, { type: 'sine', vol: .06 }); });
+          tone(1319, .8, .9, { type: 'triangle', vol: .2 }); tone(1568, .8, .9, { type: 'sine', vol: .12 });
+          // vỗ tay
+          for (let i = 0; i < 26; i++) noiseBurst(.55 + i * .055 + Math.random() * .03, .06, .35);
+        },
+      };
+    })();
+
+    const soundBtn = document.getElementById('soundBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    const renderSound = () => {
+      soundIcon.textContent = Sound.muted ? '🔇' : '🔊';
+      soundBtn.setAttribute('aria-label', Sound.muted ? 'Bật âm thanh' : 'Tắt âm thanh');
+    };
+    soundBtn.addEventListener('click', () => { Sound.toggle(); renderSound(); });
+    renderSound();
+    ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => Sound.unlock(), { once: true }));
+
+    // ============================================================
+    //  Helpers
+    // ============================================================
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const show = (id) => {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const el = $(id);
+      el.classList.add('active');
+      el.classList.remove('fade-in'); void el.offsetWidth; el.classList.add('fade-in');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    let toastTimer;
+    const toast = (msg) => {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.remove('opacity-0', 'translate-y-4');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.add('opacity-0', 'translate-y-4'), 2200);
+    };
+
+    const confetti = (n = 90) => {
+      const colors = ['#FFA8C5', '#C9A9FF', '#98E6CA', '#FFE08A', '#FF86AE', '#AE86F5'];
+      for (let i = 0; i < n; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        const size = 6 + Math.random() * 8;
+        Object.assign(c.style, {
+          left: Math.random() * 100 + 'vw',
+          width: size + 'px', height: size * (Math.random() > .5 ? 1 : .45) + 'px',
+          background: colors[i % colors.length],
+          animationDuration: 2.2 + Math.random() * 2 + 's',
+          animationDelay: Math.random() * .6 + 's',
+          borderRadius: Math.random() > .6 ? '50%' : '3px',
+        });
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 5200);
+      }
+    };
+
+    const hearts = (x, y) => {
+      ['💖', '✨', '💕', '🌸'].forEach((h, i) => {
+        const el = document.createElement('div');
+        el.className = 'float-heart';
+        el.textContent = h;
+        el.style.left = x + (i - 1.5) * 22 + 'px';
+        el.style.top = y - 10 + 'px';
+        el.style.animationDelay = i * .08 + 's';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1600);
+      });
+    };
+
+    // ============================================================
+    //  📖 STORY INTRO
+    // ============================================================
+    let storyIdx = 0;
+    const storyCard = $('storyCard');
+    const bars = document.querySelectorAll('.story-bar');
+
+    const renderStory = () => {
+      const s = STORY[storyIdx];
+      bars.forEach((b, i) => b.classList.toggle('done', i <= storyIdx));
+      const sparklePos = [['12%', '14%'], ['82%', '20%'], ['18%', '78%']];
+      storyCard.innerHTML = `
+        ${s.extras.map((e, i) => `<span class="sparkle text-2xl sm:text-3xl" style="left:${sparklePos[i][0]};top:${sparklePos[i][1]};animation-delay:${i * .6}s">${e}</span>`).join('')}
+        <div class="pop-in"><div class="text-8xl sm:text-9xl ${s.anim} drop-shadow-xl">${s.sticker}</div></div>
+        <h1 class="font-display font-extrabold text-[1.7rem] leading-tight sm:text-4xl text-ink mt-8 max-w-md fade-up d-2">${esc(s.title)}</h1>
+        <p class="text-ink/60 mt-3 fade-up d-3">${esc(s.sub)}</p>
+        ${s.cta ? `<button id="startBtn" type="button" class="mt-8 font-display font-bold text-xl text-white px-10 py-4 rounded-3xl bg-gradient-to-r from-blush-400 via-lilac-400 to-mint-400 shadow-xl shadow-lilac-300/50 hover:-translate-y-1 hover:shadow-2xl active:translate-y-0 transition heartbeat fade-up d-4">Bắt đầu ngay ✨</button>` : `<p class="text-xs text-ink/40 mt-8 fade-in d-4">(chạm để tiếp tục)</p>`}
+      `;
+      $('nextStoryBtn').style.visibility = s.cta ? 'hidden' : 'visible';
+      $('skipBtn').style.visibility = s.cta ? 'hidden' : 'visible';
+      if (s.cta) $('startBtn').addEventListener('click', (e) => { e.stopPropagation(); startQuizFlow(); });
+    };
+
+    const nextStory = () => {
+      if (storyIdx >= STORY.length - 1) return;
+      storyIdx++;
+      Sound.whoosh();
+      storyCard.classList.remove('slide-in-right'); void storyCard.offsetWidth; storyCard.classList.add('slide-in-right');
+      renderStory();
+    };
+
+    storyCard.addEventListener('click', nextStory);
+    $('nextStoryBtn').addEventListener('click', nextStory);
+    $('skipBtn').addEventListener('click', () => { storyIdx = STORY.length - 2; nextStory(); });
+    renderStory();
+
+    // ============================================================
+    //  🪪 NAME
+    // ============================================================
+    let player = localStorage.getItem('bhttn_name') || '';
+    const startQuizFlow = () => {
+      Sound.ting();
+      $('playerName').value = player;
+      show('screen-name');
+      setTimeout(() => $('playerName').focus({ preventScroll: true }), 300);
+    };
+
+    $('nameForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const n = $('playerName').value.trim();
+      if (!n) { $('playerName').classList.add('shake'); setTimeout(() => $('playerName').classList.remove('shake'), 500); return; }
+      player = n.slice(0, 24);
+      localStorage.setItem('bhttn_name', player);
+      Sound.pop();
+      startQuiz();
+    });
+
+    // ============================================================
+    //  ❓ QUIZ
+    // ============================================================
+    let qIdx = 0, score = 0, locked = false;
+    const letters = ['A', 'B', 'C', 'D'];
+    const optBase = 'opt group w-full flex items-center gap-3 text-left px-4 py-3.5 sm:py-4 rounded-3xl border-2 bg-white/75 border-white font-semibold transition-all duration-300 ease-out';
+    const optIdle = 'hover:border-lilac-200 hover:bg-lilac-100/60 hover:-translate-y-0.5 active:scale-[.98]';
+
+    const startQuiz = () => {
+      qIdx = 0; score = 0;
+      show('screen-quiz');
+      renderQuestion();
+    };
+
+    const renderQuestion = () => {
+      const item = QUESTIONS[qIdx];
+      locked = false;
+      $('qCounter').textContent = `Câu ${qIdx + 1}/${QUESTIONS.length}`;
+      $('qScore').textContent = `💖 ${score} điểm`;
+      $('qProgress').style.width = (qIdx / QUESTIONS.length * 100) + '%';
+      $('qFeedback').innerHTML = '';
+      const nb = $('nextQBtn');
+      nb.disabled = true;
+      nb.textContent = qIdx === QUESTIONS.length - 1 ? 'Xem kết quả 🎉' : 'Câu tiếp theo →';
+
+      $('qBody').innerHTML = `
+        <div class="text-center slide-in-right">
+          <div class="text-5xl sm:text-6xl bob inline-block">${item.emoji}</div>
+          <h2 class="font-display font-bold text-2xl sm:text-[1.75rem] leading-snug mt-3 mb-6">${esc(item.q)}</h2>
+        </div>
+        <div class="space-y-3">
+          ${item.options.map((o, i) => `
+            <button type="button" data-i="${i}" class="${optBase} ${optIdle} fade-up" style="animation-delay:${.1 + i * .07}s">
+              <span class="badge shrink-0 w-9 h-9 rounded-2xl grid place-items-center font-display font-bold bg-blush-100 text-blush-500 transition-colors duration-300">${letters[i]}</span>
+              <span class="flex-1">${esc(o)}</span>
+              <span class="mark text-xl opacity-0 transition-opacity duration-300"></span>
+            </button>`).join('')}
+        </div>`;
+
+      $('qBody').querySelectorAll('.opt').forEach(btn => btn.addEventListener('click', (e) => choose(+btn.dataset.i, btn, e)));
+    };
+
+    const paint = (btn, kind) => {
+      const badge = btn.querySelector('.badge');
+      const mark = btn.querySelector('.mark');
+      btn.className = optBase + ' cursor-default';
+      if (kind === 'correct') {
+        btn.classList.replace('bg-white/75', 'bg-mint-100'); btn.classList.replace('border-white', 'border-mint-300');
+        badge.className = badge.className.replace(/bg-blush-100 text-blush-500/, 'bg-mint-400 text-white');
+        mark.textContent = '✅'; mark.classList.remove('opacity-0');
+      } else if (kind === 'wrong') {
+        btn.classList.replace('bg-white/75', 'bg-blush-100'); btn.classList.replace('border-white', 'border-blush-300');
+        badge.className = badge.className.replace(/bg-blush-100 text-blush-500/, 'bg-blush-400 text-white');
+        mark.textContent = '❌'; mark.classList.remove('opacity-0');
+      } else {
+        btn.classList.add('opacity-50');
+      }
+    };
+
+    const choose = (i, btn, e) => {
+      if (locked) return;
+      locked = true;
+      Sound.pop();
+      const item = QUESTIONS[qIdx];
+      const ok = i === item.answer;
+      const buttons = [...$('qBody').querySelectorAll('.opt')];
+
+      buttons.forEach((b, j) => {
+        if (j === item.answer) paint(b, 'correct');
+        else if (j === i) paint(b, 'wrong');
+        else paint(b, 'dim');
+      });
+
+      if (ok) {
+        score++;
+        btn.classList.add('bounce-once');
+        setTimeout(() => Sound.correct(), 120);
+        const r = btn.getBoundingClientRect();
+        hearts(e.clientX || r.left + r.width / 2, e.clientY || r.top);
+        $('qFeedback').innerHTML = `<p class="pop-in font-display font-bold text-lg text-mint-500">Chuẩn không cần chỉnh! 🎯</p><p class="text-sm text-ink/60 fade-up d-1">${esc(item.note)}</p>`;
+      } else {
+        btn.classList.add('shake');
+        setTimeout(() => Sound.wrong(), 120);
+        $('qFeedback').innerHTML = `<p class="pop-in font-display font-bold text-lg text-blush-500">Hông phải rùi nha 🙈</p><p class="text-sm text-ink/60 fade-up d-1">${esc(item.note)}</p>`;
+      }
+
+      $('qScore').textContent = `💖 ${score} điểm`;
+      $('qProgress').style.width = ((qIdx + 1) / QUESTIONS.length * 100) + '%';
+      $('nextQBtn').disabled = false;
+    };
+
+    $('nextQBtn').addEventListener('click', () => {
+      Sound.tap();
+      if (qIdx < QUESTIONS.length - 1) { qIdx++; renderQuestion(); }
+      else finish();
+    });
+
+    // ============================================================
+    //  🏆 RESULT + LEADERBOARD
+    // ============================================================
+    const LB_KEY = 'bhttn_leaderboard';
+    const API = '/api/leaderboard';
+    let myEntryTime = 0;
+
+    const localLB = () => { try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch { return []; } };
+    const saveLocal = (entry) => {
+      const list = [...localLB(), entry].sort((a, b) => b.score - a.score || a.createdAt - b.createdAt).slice(0, 20);
+      localStorage.setItem(LB_KEY, JSON.stringify(list));
+      return list;
+    };
+
+    const normalize = (rows) => rows.map(r => ({ ...r, createdAt: new Date(r.createdAt).getTime() }));
+
+    const renderLB = (list, source) => {
+      $('lbSource').textContent = source === 'online' ? '🌐 Mọi người' : '📱 Trên máy này';
+      const ol = $('leaderboard');
+      if (!list.length) { ol.innerHTML = `<li class="text-center text-ink/50 py-6">Chưa có ai cả, bạn là người đầu tiên đó! 🥇</li>`; return; }
+      const medals = ['🥇', '🥈', '🥉'];
+      const rowBg = ['bg-gradient-to-r from-[#FFF3C4] to-white/80', 'bg-gradient-to-r from-lilac-100 to-white/80', 'bg-gradient-to-r from-blush-100 to-white/80'];
+      ol.innerHTML = list.map((r, i) => {
+        const me = r.name === player && Math.abs(r.createdAt - myEntryTime) < 60000;
+        return `
+        <li class="flex items-center gap-3 px-4 py-3 rounded-3xl ${rowBg[i] || 'bg-white/70'} ${me ? 'ring-2 ring-lilac-300' : ''} fade-up" style="animation-delay:${Math.min(i, 10) * .05}s">
+          <span class="w-8 text-center font-display font-bold text-lg">${medals[i] || i + 1}</span>
+          <span class="flex-1 font-semibold truncate">${esc(r.name)}${me ? ' <span class="text-xs text-lilac-500">(bạn)</span>' : ''}</span>
+          <span class="font-display font-bold text-lilac-500">${r.score}/${r.total}</span>
+        </li>`;
+      }).join('');
+    };
+
+    const loadLB = async (entry) => {
+      const list = entry ? saveLocal(entry) : localLB();
+      renderLB(list, 'local');
+      if (location.protocol === 'file:') return;
+      try {
+        const res = await fetch(API, entry
+          ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: entry.name, score: entry.score, total: entry.total }) }
+          : undefined);
+        if (!res.ok) throw new Error(res.status);
+        renderLB(normalize(await res.json()), 'online');
+      } catch { /* giữ bảng localStorage */ }
+    };
+
+    const finish = () => {
+      const total = QUESTIONS.length;
+      const r = RESULTS.find(x => score >= x.min);
+      $('resultEmoji').textContent = r.emoji;
+      $('resultName').textContent = player;
+      $('resultScore').textContent = score;
+      $('resultTotal').textContent = total;
+      $('resultTitle').textContent = r.title;
+      $('resultTitle').className = `font-display font-bold text-2xl sm:text-3xl mt-2 fade-up d-3 ${r.color}`;
+      $('resultMsg').textContent = r.msg;
+      show('screen-result');
+
+      if (score >= Math.ceil(total * .6)) { Sound.victory(); confetti(score === total ? 140 : 80); }
+      else { Sound.ting(); }
+
+      myEntryTime = Date.now();
+      loadLB({ name: player, score, total, createdAt: myEntryTime });
+    };
+
+    $('retryBtn').addEventListener('click', () => { Sound.pop(); startQuiz(); });
+
+    $('shareBtn').addEventListener('click', async () => {
+      Sound.pop();
+      const url = location.href.split('#')[0];
+      const text = `Tui được ${score}/${QUESTIONS.length} điểm trong "Bạn hiểu tui thế nào?" 💖 Thử xem bạn được mấy điểm nè!`;
+      if (navigator.share) {
+        try { await navigator.share({ title: 'Bạn hiểu tui thế nào?', text, url }); } catch {}
+        return;
+      }
+      try { await navigator.clipboard.writeText(`${text} ${url}`); toast('Đã copy link, gửi cho bạn bè thui! 📋'); }
+      catch { toast(url); }
+    });
+  })();
+  </script>
+</body>
+</html>
