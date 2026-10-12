@@ -1,33 +1,44 @@
 import type { Config } from "@netlify/functions";
-import { desc, asc } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { scores } from "../../db/schema.js";
 
-const top = () =>
+const top = (quizId: string) =>
   db
-    .select({ name: scores.name, score: scores.score, total: scores.total, createdAt: scores.createdAt })
+    .select({ name: scores.name, avatar: scores.avatar, score: scores.score, total: scores.total, createdAt: scores.createdAt })
     .from(scores)
+    .where(eq(scores.quizId, quizId))
     .orderBy(desc(scores.score), asc(scores.createdAt))
-    .limit(20);
+    .limit(100);
 
 export default async (req: Request) => {
-  if (req.method === "GET") return Response.json(await top());
+  if (req.method === "GET") {
+    const quizId = new URL(req.url).searchParams.get("quizId") ?? "";
+    if (!/^[a-z0-9]{6,20}$/.test(quizId)) {
+      return Response.json({ error: "Invalid quiz ID" }, { status: 400 });
+    }
+    return Response.json(await top(quizId), { headers: { "Cache-Control": "no-store" } });
+  }
 
   if (req.method === "POST") {
-    let body: any;
+    let body: unknown;
     try {
       body = await req.json();
     } catch {
       return Response.json({ error: "Invalid JSON" }, { status: 400 });
     }
-    const name = String(body?.name ?? "").trim().slice(0, 24);
-    const total = Number(body?.total);
-    const score = Number(body?.score);
-    if (!name || !Number.isInteger(total) || total < 1 || total > 50 || !Number.isInteger(score) || score < 0 || score > total) {
+    if (!body || typeof body !== "object") return Response.json({ error: "Invalid score" }, { status: 400 });
+    const payload = body as Record<string, unknown>;
+    const quizId = typeof payload.quizId === "string" ? payload.quizId : "";
+    const name = typeof payload.name === "string" ? payload.name.trim().slice(0, 24) : "";
+    const avatar = typeof payload.avatar === "string" && payload.avatar.length <= 16 ? payload.avatar : "";
+    const total = Number(payload.total);
+    const score = Number(payload.score);
+    if (!/^[a-z0-9]{6,20}$/.test(quizId) || !name || !avatar || !Number.isInteger(total) || total < 1 || total > 30 || !Number.isInteger(score) || score < 0 || score > total) {
       return Response.json({ error: "Invalid score" }, { status: 400 });
     }
-    await db.insert(scores).values({ name, score, total });
-    return Response.json(await top(), { status: 201 });
+    await db.insert(scores).values({ quizId, name, avatar, score, total });
+    return Response.json(await top(quizId), { status: 201 });
   }
 
   return new Response("Method not allowed", { status: 405 });
