@@ -123,7 +123,32 @@
 
         <div class="flex items-center justify-between mt-5 px-1">
           <button id="skipBtn" type="button" class="text-sm font-semibold text-ink/50 hover:text-ink/80 transition px-3 py-2 rounded-full">Bỏ qua ⏭</button>
+          <button id="openCreatorBtn" type="button" class="text-xs sm:text-sm font-semibold text-lilac-500 hover:text-lilac-600 transition px-3 py-2 rounded-full bg-white/70 backdrop-blur-sm border border-white shadow-sm">✍️ Tự tạo câu hỏi</button>
           <button id="nextStoryBtn" type="button" class="font-display font-bold text-lg bg-white/80 backdrop-blur-md border border-white text-lilac-500 px-6 py-2.5 rounded-full shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition">Tiếp nè →</button>
+        </div>
+      </section>
+
+      <!-- ============ CREATOR / EDIT QUESTIONS ============ -->
+      <section id="screen-creator" class="screen flex-col">
+        <div class="bg-white/60 backdrop-blur-xl border border-white/80 rounded-3xl shadow-2xl shadow-lilac-200/50 p-5 sm:p-8 max-h-[85dvh] flex flex-col">
+          <div class="flex items-center justify-between mb-3 shrink-0">
+            <h2 class="font-display font-extrabold text-2xl text-ink">✍️ Tự tạo bộ câu hỏi</h2>
+            <button id="backToStoryBtn" type="button" class="text-xs font-semibold text-ink/60 hover:text-ink px-3 py-1.5 rounded-full bg-white/70">← Quay lại</button>
+          </div>
+          <p class="text-xs text-ink/60 mb-4 shrink-0">Bạn có thể sửa câu hỏi, thêm câu mới hoặc chọn lại đáp án đúng nha!</p>
+          
+          <div id="creatorQuestionsList" class="space-y-4 overflow-y-auto pr-1 flex-1 mb-4">
+            <!-- Injected by JS -->
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 shrink-0 pt-2 border-t border-white/40">
+            <button id="addQCreatorBtn" type="button" class="font-display font-bold text-sm py-3 px-4 rounded-2xl bg-mint-100 text-mint-500 hover:bg-mint-200 transition">
+              ➕ Thêm câu hỏi
+            </button>
+            <button id="saveCreatorBtn" type="button" class="flex-1 font-display font-bold text-base py-3.5 px-6 rounded-3xl text-white bg-gradient-to-r from-blush-400 to-lilac-400 shadow-lg shadow-blush-300/50 hover:brightness-105 transition">
+              💾 Lưu & Bắt đầu chơi 🚀
+            </button>
+          </div>
         </div>
       </section>
 
@@ -205,47 +230,56 @@
   <script>
   (() => {
     // ============================================================
-    //  ✏️ TUỲ CHỈNH Ở ĐÂY: tên chủ quiz + bộ câu hỏi
+    //  ✏️ BỘ CÂU HỎI (Tự động tải từ bộ bạn đã tạo hoặc mặc định)
     // ============================================================
     const OWNER = 'tui';
 
-    const QUESTIONS = [
-      {
-        q: 'Món ăn mà tui có thể ăn 7 ngày liền không biết chán là gì?',
-        emoji: '🍜',
-        options: ['Bún bò Huế cay xé lưỡi', 'Trà sữa full topping (đồ uống cũng tính!)', 'Mì gói lúc 2h sáng', 'Rau luộc... đùa thui 🙂'],
-        answer: 2,
-        note: 'Mì gói 2h sáng là chân ái, không cãi 🌙',
-      },
-      {
-        q: 'Khi buồn, tui thường làm gì để "hồi máu"?',
-        emoji: '🥺',
-        options: ['Đi shopping online rồi... huỷ đơn', 'Ngủ một giấc 14 tiếng', 'Nghe nhạc buồn cho buồn thêm', 'Ăn. Chỉ đơn giản là ăn.'],
-        answer: 3,
-        note: 'Bụng no thì lòng mới vui được chứ 🍰',
-      },
-      {
-        q: 'Nếu là một con vật, tui sẽ là con gì?',
-        emoji: '🐾',
-        options: ['Mèo: lười nhưng sang chảnh', 'Cún: lúc nào cũng tăng động', 'Gấu trúc: ăn và ngủ là chính', 'Cá vàng: trí nhớ 3 giây'],
-        answer: 0,
-        note: 'Meo~ đúng rồi đó, sang chảnh lắm nha 😼',
-      },
-      {
-        q: 'Câu cửa miệng tui hay nói nhất là gì?',
-        emoji: '💬',
-        options: ['"Để mai tính"', '"Ủa alo?"', '"Đói quá à"', '"Hong sao đâu"'],
-        answer: 1,
-        note: '"Ủa alo?" — câu nói vạn năng mọi tình huống 📞',
-      },
-      {
-        q: 'Siêu năng lực tui ước có nhất là gì?',
-        emoji: '✨',
-        options: ['Dịch chuyển tức thời để khỏi kẹt xe', 'Ngủ 1 tiếng bằng 8 tiếng', 'Ăn hoài không mập', 'Đọc suy nghĩ crush'],
-        answer: 2,
-        note: 'Ăn không mập — giấc mơ của cả nhân loại 🙏',
-      },
-    ];
+    let QUESTIONS = (() => {
+      try {
+        const saved = localStorage.getItem('bhttn_custom_questions');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+      return [
+        {
+          q: 'Món ăn mà tui có thể ăn 7 ngày liền không biết chán là gì?',
+          emoji: '🍜',
+          options: ['Bún bò Huế cay xé lưỡi', 'Trà sữa full topping (đồ uống cũng tính!)', 'Mì gói lúc 2h sáng', 'Rau luộc... đùa thui 🙂'],
+          answer: 2,
+          note: 'Mì gói 2h sáng là chân ái, không cãi 🌙',
+        },
+        {
+          q: 'Khi buồn, tui thường làm gì để "hồi máu"?',
+          emoji: '🥺',
+          options: ['Đi shopping online rồi... huỷ đơn', 'Ngủ một giấc 14 tiếng', 'Nghe nhạc buồn cho buồn thêm', 'Ăn. Chỉ đơn giản là ăn.'],
+          answer: 3,
+          note: 'Bụng no thì lòng mới vui được chứ 🍰',
+        },
+        {
+          q: 'Nếu là một con vật, tui sẽ là con gì?',
+          emoji: '🐾',
+          options: ['Mèo: lười nhưng sang chảnh', 'Cún: lúc nào cũng tăng động', 'Gấu trúc: ăn và ngủ là chính', 'Cá vàng: trí nhớ 3 giây'],
+          answer: 0,
+          note: 'Meo~ đúng rồi đó, sang chảnh lắm nha 😼',
+        },
+        {
+          q: 'Câu cửa miệng tui hay nói nhất là gì?',
+          emoji: '💬',
+          options: ['"Để mai tính"', '"Ủa alo?"', '"Đói quá à"', '"Hong sao đâu"'],
+          answer: 1,
+          note: '"Ủa alo?" — câu nói vạn năng mọi tình huống 📞',
+        },
+        {
+          q: 'Siêu năng lực tui ước có nhất là gì?',
+          emoji: '✨',
+          options: ['Dịch chuyển tức thời để khỏi kẹt xe', 'Ngủ 1 tiếng bằng 8 tiếng', 'Ăn hoài không mập', 'Đọc suy nghĩ crush'],
+          answer: 2,
+          note: 'Ăn không mập — giấc mơ của cả nhân loại 🙏',
+        },
+      ];
+    })();
 
     const STORY = [
       {
@@ -258,7 +292,7 @@
         sticker: '🕵️', anim: 'bob',
         extras: ['🔍', '💭', '❓'],
         title: `Để xem bạn hiểu chủ nhân chiếc link này đến mức nào nha...`,
-        sub: '5 câu hỏi lầy lội đang chờ bạn đó 👀',
+        sub: 'Các câu hỏi thú vị đang chờ bạn đó 👀',
       },
       {
         sticker: '🚀', anim: 'rocket',
@@ -283,7 +317,7 @@
     ];
 
     // ============================================================
-    //  🔊 SOUND (Web Audio API — không cần file ngoài)
+    //  🔊 SOUND (Web Audio API)
     // ============================================================
     const Sound = (() => {
       let ctx = null;
@@ -346,14 +380,13 @@
           const melody = [[523, 0], [659, .12], [784, .24], [1047, .36], [784, .52], [1047, .64]];
           melody.forEach(([f, t]) => { tone(f, t, .28, { type: 'triangle', vol: .22 }); tone(f * 2, t, .2, { type: 'sine', vol: .06 }); });
           tone(1319, .8, .9, { type: 'triangle', vol: .2 }); tone(1568, .8, .9, { type: 'sine', vol: .12 });
-          // vỗ tay
           for (let i = 0; i < 26; i++) noiseBurst(.55 + i * .055 + Math.random() * .03, .06, .35);
         },
       };
     })();
 
-    const soundBtn = document.getElementById('soundBtn');
-    const soundIcon = document.getElementById('soundIcon');
+    const soundBtn = $('soundBtn');
+    const soundIcon = $('soundIcon');
     const renderSound = () => {
       soundIcon.textContent = Sound.muted ? '🔇' : '🔊';
       soundBtn.setAttribute('aria-label', Sound.muted ? 'Bật âm thanh' : 'Tắt âm thanh');
@@ -437,6 +470,7 @@
       `;
       $('nextStoryBtn').style.visibility = s.cta ? 'hidden' : 'visible';
       $('skipBtn').style.visibility = s.cta ? 'hidden' : 'visible';
+      $('openCreatorBtn').style.visibility = s.cta ? 'hidden' : 'visible';
       if (s.cta) $('startBtn').addEventListener('click', (e) => { e.stopPropagation(); startQuizFlow(); });
     };
 
@@ -449,9 +483,118 @@
     };
 
     storyCard.addEventListener('click', nextStory);
-    $('nextStoryBtn').addEventListener('click', nextStory);
-    $('skipBtn').addEventListener('click', () => { storyIdx = STORY.length - 2; nextStory(); });
+    $('nextStoryBtn').addEventListener('click', nextStory);$('skipBtn').addEventListener('click', () => { storyIdx = STORY.length - 2; nextStory(); });
     renderStory();
+
+    // ============================================================
+    //  ✍️ CREATOR / EDIT QUESTIONS
+    // ============================================================
+    let editableQuestions = [];
+
+    const openCreator = () => {
+      Sound.pop();
+      editableQuestions = JSON.parse(JSON.stringify(QUESTIONS));
+      renderCreatorList();
+      show('screen-creator');
+    };
+
+    const renderCreatorList = () => {
+      const container = $('creatorQuestionsList');
+      if (!editableQuestions.length) {
+        container.innerHTML = `<div class="text-center text-ink/50 py-8">Chưa có câu hỏi nào. Hãy bấm "Thêm câu hỏi" bên dưới nhé! 👇</div>`;
+        return;
+      }
+      container.innerHTML = editableQuestions.map((item, qIdx) => `
+        <div class="bg-white/80 border-2 border-lilac-100 rounded-3xl p-4 sm:p-5 space-y-3 relative fade-up" style="animation-delay:${Math.min(qIdx, 5) * .05}s">
+          <div class="flex items-center justify-between">
+            <span class="font-display font-bold text-xs text-lilac-500 bg-lilac-100 px-3 py-1 rounded-full">Câu ${qIdx + 1}</span>
+            <div class="flex items-center gap-2">
+              <input type="text" maxlength="4" value="${esc(item.emoji || '💡')}" data-qi="${qIdx}" class="q-emoji w-12 text-center text-lg bg-white border border-lilac-200 rounded-xl py-1 outline-none" title="Emoji" />
+              ${editableQuestions.length > 1 ? `<button type="button" data-del="${qIdx}" class="del-q-btn text-red-400 hover:text-red-600 font-semibold text-xs bg-blush-100 px-2.5 py-1.5 rounded-xl transition">🗑️ Xóa</button>` : ''}
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-ink/60 mb-1">Nội dung câu hỏi:</label>
+            <input type="text" value="${esc(item.q)}" data-qi="${qIdx}" class="q-text w-full text-sm px-3.5 py-2.5 rounded-2xl bg-white border border-lilac-200 outline-none focus:border-lilac-400 transition" placeholder="Nhập câu hỏi..." />
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[11px] font-semibold text-ink/60">4 đáp án (tích tròn ô là đáp án đúng):</label>
+            ${[0, 1, 2, 3].map(optIdx => `
+              <div class="flex items-center gap-2">
+                <input type="radio" name="correct_${qIdx}" value="${optIdx}" ${item.answer === optIdx ? 'checked' : ''} data-qi="${qIdx}" data-opt="${optIdx}" class="q-correct w-4 h-4 text-blush-500 accent-blush-500 cursor-pointer" title="Chọn làm đáp án đúng" />
+                <input type="text" value="${esc(item.options[optIdx] || '')}" data-qi="${qIdx}" data-opt="${optIdx}" class="q-opt w-full text-xs px-3 py-2 rounded-xl bg-white border border-lilac-200 outline-none focus:border-lilac-400 transition" placeholder="Đáp án ${['A','B','C','D'][optIdx]}" />
+              </div>
+            `).join('')}
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-ink/60 mb-1">Lời nhắn / Giải thích khi trả lời:</label>
+            <input type="text" value="${esc(item.note || '')}" data-qi="${qIdx}" class="q-note w-full text-xs px-3.5 py-2 rounded-xl bg-white border border-lilac-200 outline-none focus:border-lilac-400 transition" placeholder="Ví dụ: Chuẩn không cần chỉnh!" />
+          </div>
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.q-emoji').forEach(el => el.addEventListener('input', e => { editableQuestions[+e.target.dataset.qi].emoji = e.target.value; }));
+      container.querySelectorAll('.q-text').forEach(el => el.addEventListener('input', e => { editableQuestions[+e.target.dataset.qi].q = e.target.value; }));
+      container.querySelectorAll('.q-note').forEach(el => el.addEventListener('input', e => { editableQuestions[+e.target.dataset.qi].note = e.target.value; }));
+      container.querySelectorAll('.q-opt').forEach(el => {
+        el.addEventListener('input', e => {
+          const qi = +e.target.dataset.qi;
+          const oi = +e.target.dataset.opt;
+          editableQuestions[qi].options[oi] = e.target.value;
+        });
+      });
+      container.querySelectorAll('.q-correct').forEach(el => {
+        el.addEventListener('change', e => {
+          const qi = +e.target.dataset.qi;
+          const oi = +e.target.dataset.opt;
+          editableQuestions[qi].answer = oi;
+        });
+      });
+      container.querySelectorAll('.del-q-btn').forEach(el => {
+        el.addEventListener('click', e => {
+          const qi = +e.target.dataset.del;
+          Sound.tap();
+          editableQuestions.splice(qi, 1);
+          renderCreatorList();
+        });
+      });
+    };
+
+    $('openCreatorBtn').addEventListener('click', openCreator);$('backToStoryBtn').addEventListener('click', () => { Sound.tap(); show('screen-story'); });
+
+    $('addQCreatorBtn').addEventListener('click', () => {
+      Sound.pop();
+      editableQuestions.push({
+        q: 'Câu hỏi mới là gì nè?',
+        emoji: '✨',
+        options: ['Đáp án A', 'Đáp án B', 'Đáp án C', 'Đáp án D'],
+        answer: 0,
+        note: 'Giải thích cho câu này...',
+      });
+      renderCreatorList();
+      $('creatorQuestionsList').scrollTop =$('creatorQuestionsList').scrollHeight;
+    });
+
+    $('saveCreatorBtn').addEventListener('click', () => {
+      for (let i = 0; i < editableQuestions.length; i++) {
+        const item = editableQuestions[i];
+        if (!item.q.trim()) {
+          toast(`Câu số ${i + 1} chưa có nội dung câu hỏi!`);
+          Sound.wrong();
+          return;
+        }
+        if (item.options.some(o => !o.trim())) {
+          toast(`Câu số ${i + 1} có đáp án chưa điền!`);
+          Sound.wrong();
+          return;
+        }
+      }
+      QUESTIONS = JSON.parse(JSON.stringify(editableQuestions));
+      localStorage.setItem('bhttn_custom_questions', JSON.stringify(QUESTIONS));
+      Sound.ting();
+      toast('Đã lưu bộ câu hỏi thành công! 🎉');
+      startQuizFlow();
+    });
 
     // ============================================================
     //  🪪 NAME
@@ -467,7 +610,7 @@
     $('nameForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const n = $('playerName').value.trim();
-      if (!n) { $('playerName').classList.add('shake'); setTimeout(() => $('playerName').classList.remove('shake'), 500); return; }
+      if (!n) { $('playerName').classList.add('shake'); setTimeout(() =>$('playerName').classList.remove('shake'), 500); return; }
       player = n.slice(0, 24);
       localStorage.setItem('bhttn_name', player);
       Sound.pop();
@@ -493,8 +636,7 @@
       locked = false;
       $('qCounter').textContent = `Câu ${qIdx + 1}/${QUESTIONS.length}`;
       $('qScore').textContent = `💖 ${score} điểm`;
-      $('qProgress').style.width = (qIdx / QUESTIONS.length * 100) + '%';
-      $('qFeedback').innerHTML = '';
+      $('qProgress').style.width = (qIdx / QUESTIONS.length * 100) + '\%';$('qFeedback').innerHTML = '';
       const nb = $('nextQBtn');
       nb.disabled = true;
       nb.textContent = qIdx === QUESTIONS.length - 1 ? 'Xem kết quả 🎉' : 'Câu tiếp theo →';
@@ -561,8 +703,7 @@
       }
 
       $('qScore').textContent = `💖 ${score} điểm`;
-      $('qProgress').style.width = ((qIdx + 1) / QUESTIONS.length * 100) + '%';
-      $('nextQBtn').disabled = false;
+      $('qProgress').style.width = ((qIdx + 1) / QUESTIONS.length * 100) + '\%';$('nextQBtn').disabled = false;
     };
 
     $('nextQBtn').addEventListener('click', () => {
@@ -614,7 +755,7 @@
           : undefined);
         if (!res.ok) throw new Error(res.status);
         renderLB(normalize(await res.json()), 'online');
-      } catch { /* giữ bảng localStorage */ }
+      } catch {}
     };
 
     const finish = () => {
