@@ -207,6 +207,7 @@
           </div>
           <button id="playPublishedBtn" type="button" class="mt-3 w-full rounded-3xl border-2 border-lilac-200 bg-white/80 py-3.5 font-display font-bold text-lilac-500">🎮 Chơi thử quiz này</button>
           <button id="publishedScoresBtn" type="button" class="mt-3 w-full rounded-3xl bg-blush-100 py-3.5 font-display font-bold text-blush-500">📊 Xem điểm của mọi người</button>
+          <button id="publishedHomeBtn" type="button" class="mt-3 w-full rounded-2xl border border-lilac-100 bg-white/65 py-3 font-semibold text-ink/65 transition hover:bg-white">🏠 Quay lại trang chủ</button>
         </div>
       </section>
 
@@ -998,6 +999,10 @@
       const attempt = !config.allowRetry ? storageGet(attemptKey()) : null;
       if (attempt) { renderResult(attempt, false); toast('Bạn đã hoàn thành quiz này trên trình duyệt rồi nha.'); }
       else startNameFlow();
+    });
+    $('publishedHomeBtn').addEventListener('click', () => {
+      showScreen('screen-home');
+      Sound.whoosh();
     });
     $('publishedScoresBtn').addEventListener('click', () => showLeaderboard());
     $('refreshLeaderboardBtn').addEventListener('click', () => { Sound.tap(); void refreshLeaderboard('leaderboardFull'); });
