@@ -93,6 +93,23 @@
         </div>
       </section>
 
+      <section id="screen-home" class="screen flex-col">
+        <article class="glass-card relative overflow-hidden rounded-[2rem] p-5 text-center sm:p-8">
+          <div class="absolute -left-12 -top-12 h-40 w-40 rounded-full bg-blush-200/70 blur-3xl"></div>
+          <div class="absolute -bottom-14 -right-12 h-44 w-44 rounded-full bg-lilac-200/70 blur-3xl"></div>
+          <div class="relative">
+            <p class="text-xs font-bold uppercase tracking-[.22em] text-lilac-500">Bạn hiểu tui thế nào? 💖</p>
+            <h1 class="mt-2 font-display text-3xl font-extrabold leading-tight sm:text-4xl">Một chút yêu thương cho mình nha ✨</h1>
+            <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink/65">Nếu bạn thích chiếc quiz này, quét mã QR để ủng hộ mình nhé. Sự yêu thương của bạn tiếp thêm động lực để mình làm thêm nhiều điều dễ thương hơn 💕</p>
+            <figure class="mx-auto mt-5 max-w-[min(72vw,340px)] overflow-hidden rounded-[1.75rem] border-4 border-white bg-white shadow-xl shadow-lilac-200/40">
+              <img src="./support-qr.png" alt="Mã QR để ủng hộ tác giả" class="block aspect-square w-full object-contain" fetchpriority="high">
+            </figure>
+            <p class="mt-3 font-display text-lg font-bold text-blush-500">📱 Quét mã để ủng hộ mình</p>
+            <button id="homeStartBtn" type="button" class="heartbeat mt-5 w-full rounded-3xl bg-gradient-to-r from-blush-400 via-lilac-400 to-mint-400 px-5 py-4 font-display text-xl font-extrabold text-white shadow-lg">🎮 Bắt đầu thử thách</button>
+          </div>
+        </article>
+      </section>
+
       <section id="screen-name" class="screen flex-col">
         <div class="glass-card rounded-[2rem] p-6 text-center sm:p-10">
           <div class="mb-3 text-6xl">🪪</div>
@@ -771,6 +788,10 @@
     }
     $('retryBtn').addEventListener('click', () => { Sound.pop(); beginQuiz(); });
     $('homeBtn').addEventListener('click', () => {
+      showScreen('screen-home');
+      Sound.whoosh();
+    });
+    $('homeStartBtn').addEventListener('click', () => {
       currentStory = 0;
       renderStory();
       showScreen('screen-story');
@@ -1049,7 +1070,7 @@
         playerName = attempt.name || playerName;
         playerAvatar = attempt.avatar || playerAvatar;
         renderResult(attempt, false);
-      } else showScreen('screen-story');
+      } else showScreen('screen-home');
     }
     initialize().catch((error) => {
       console.error('Không thể khởi tạo mini-quiz:', error);
