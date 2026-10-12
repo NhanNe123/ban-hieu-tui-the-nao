@@ -14,7 +14,7 @@ function isQuizPayload(value: unknown): value is Record<string, unknown> {
   if (typeof quiz.allowRetry !== "boolean" || typeof quiz.showAnswers !== "boolean") return false;
   if (typeof quiz.secretMessage !== "string" || quiz.secretMessage.length > 240) return false;
   if (!Number.isFinite(Number(quiz.secretThreshold)) || Number(quiz.secretThreshold) < 0 || Number(quiz.secretThreshold) > 100) return false;
-  if (!Array.isArray(quiz.questions) || quiz.questions.length < 1 || quiz.questions.length > 30) return false;
+  if (!Array.isArray(quiz.questions) || quiz.questions.length < 1 || quiz.questions.length > 15) return false;
 
   return quiz.questions.every((question: unknown) => {
     if (!question || typeof question !== "object" || Array.isArray(question)) return false;

@@ -55,6 +55,8 @@
     @keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: .85; } }
     .float-heart { position: fixed; z-index: 60; pointer-events: none; font-size: 22px; animation: float-up 1.2s ease-out forwards; }
     @keyframes float-up { to { opacity: 0; transform: translateY(-100px) scale(1.35); } }
+    .shake { animation: shake .42s ease; }
+    @keyframes shake { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
     .avatar-choice[aria-pressed="true"] { border-color: #f2668f; background: #ffe4ee; box-shadow: 0 0 0 3px rgba(242,102,143,.14); transform: translateY(-2px); }
     .answer-option[aria-pressed="true"] { border-color: #ae86f5; background: #f1e8ff; box-shadow: 0 0 0 3px rgba(174,134,245,.2); }
     .answer-option[aria-pressed="true"] .option-letter { background: #ae86f5; color: #fff; }
@@ -134,6 +136,7 @@
             <button id="shareBtn" type="button" class="rounded-3xl bg-gradient-to-r from-mint-400 to-lilac-400 py-3.5 font-display text-lg font-bold text-white shadow-lg">📤 Khoe điểm & Rủ bạn bè</button>
             <button id="creatorLoopBtn" type="button" class="heartbeat col-span-1 rounded-3xl border border-white bg-gradient-to-r from-[#ffe5f0] via-white to-[#e7e8ff] px-4 py-4 font-display text-lg font-extrabold text-ink shadow-lg shadow-lilac-200/50 sm:col-span-2">✨ Tạo Quiz về bản thân & Thách đấu lại bạn bè!</button>
           </div>
+          <button id="homeBtn" type="button" class="relative mt-3 w-full rounded-2xl border border-lilac-100 bg-white/65 py-3 font-semibold text-ink/65 transition hover:bg-white">🏠 Về trang đầu</button>
         </article>
         <section class="glass-card rounded-[2rem] p-5 sm:p-7">
           <div class="mb-4 flex items-center justify-between">
@@ -234,13 +237,18 @@
     'use strict';
     const $ = (id) => document.getElementById(id);
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-    const AVATARS = ['🐻', '🐱', '🐰', '🐼', '🦊', '🐸', '🐣', '🦄', '🐧', '🐶', '🐨', '🐹'];
+    const AVATARS = ['🐱', '🐶', '🐰', '🐼', '🦊', '🐸', '🐷', '🦄', '🐻', '🐣', '🐨', '🐹'];
     const DEFAULT_QUESTIONS = [
       { q: 'Món ăn mà tui có thể ăn 7 ngày liền không biết chán là gì?', emoji: '🍜', options: ['Bún bò Huế cay xé lưỡi', 'Trà sữa full topping', 'Mì gói lúc 2h sáng', 'Rau luộc... đùa thui 🙂'], answer: 2, note: 'Mì gói 2h sáng là chân ái, không cãi 🌙' },
       { q: 'Khi buồn, tui thường làm gì để “hồi máu”?', emoji: '🥺', options: ['Đi shopping online rồi huỷ đơn', 'Ngủ một giấc 14 tiếng', 'Nghe nhạc buồn cho buồn thêm', 'Ăn. Chỉ đơn giản là ăn.'], answer: 3, note: 'Bụng no thì lòng mới vui được chứ 🍰' },
       { q: 'Nếu là một con vật, tui sẽ là con gì?', emoji: '🐾', options: ['Mèo: lười nhưng sang chảnh', 'Cún: lúc nào cũng tăng động', 'Gấu trúc: ăn và ngủ là chính', 'Cá vàng: trí nhớ 3 giây'], answer: 0, note: 'Meo~ đúng rồi đó, sang chảnh lắm nha 😼' },
       { q: 'Câu cửa miệng tui hay nói nhất là gì?', emoji: '💬', options: ['“Để mai tính”', '“Ủa alo?”', '“Đói quá à”', '“Hong sao đâu”'], answer: 1, note: '“Ủa alo?” — câu nói vạn năng mọi tình huống 📞' },
-      { q: 'Siêu năng lực tui ước có nhất là gì?', emoji: '✨', options: ['Dịch chuyển tức thời để khỏi kẹt xe', 'Ngủ 1 tiếng bằng 8 tiếng', 'Ăn hoài không mập', 'Đọc suy nghĩ crush'], answer: 2, note: 'Ăn không mập — giấc mơ của cả nhân loại 🙏' }
+      { q: 'Siêu năng lực tui ước có nhất là gì?', emoji: '✨', options: ['Dịch chuyển tức thời để khỏi kẹt xe', 'Ngủ 1 tiếng bằng 8 tiếng', 'Ăn hoài không mập', 'Đọc suy nghĩ crush'], answer: 2, note: 'Ăn không mập — giấc mơ của cả nhân loại 🙏' },
+      { q: 'Nếu được đi du lịch ngay ngày mai, tui chọn đâu?', emoji: '🧳', options: ['Đà Lạt săn mây', 'Biển xanh cát trắng', 'Ở nhà ngủ cho khỏe', 'Đi đâu có đồ ăn ngon'], answer: 3, note: 'Có đồ ăn ngon là chuyến đi tự động vui hơn 😋' },
+      { q: 'Tật xấu đáng yêu nhất của tui là gì?', emoji: '🙈', options: ['Hay nói “5 phút nữa”', 'Mua đồ xong quên mất', 'Chụp đồ ăn 20 tấm mới ăn', 'Cả ba đều đúng!'], answer: 3, note: 'Tật xấu mà đáng yêu thì được tha thứ nha 😌' },
+      { q: 'Món quà nào làm tui vui nhất?', emoji: '🎁', options: ['Một món đồ handmade', 'Đồ ăn ngon bất ngờ', 'Một lá thư viết tay', 'Có bạn ở bên là vui rồi'], answer: 1, note: 'Đường đến trái tim đôi khi đi qua chiếc bụng 🍰' },
+      { q: 'Khi rảnh rỗi, tui thường chọn làm gì?', emoji: '🛋️', options: ['Xem phim cuộn chăn', 'Lướt mạng không mục đích', 'Đi cà phê tám chuyện', 'Ngủ một giấc thật ngon'], answer: 0, note: 'Cuộn chăn xem phim là chân ái ngày nghỉ 🍿' },
+      { q: 'Điều gì khiến tui cười không ngừng?', emoji: '🤣', options: ['Meme đúng gu', 'Bạn thân kể chuyện xàm', 'Động vật làm trò ngố', 'Cười lây khi thấy người khác cười'], answer: 1, note: 'Bạn thân mà hợp tần số thì nói gì cũng buồn cười 💕' }
     ];
     const TEMPLATES = [
       { id: 'food', label: '🍜 Món ăn', emoji: '🍜', q: 'Món ăn mà mình khó cưỡng nhất là gì?', options: ['Món mình thèm khi stress', 'Món ăn yêu thích số 1', 'Món đặc trưng của mình', 'Món ăn vặt lúc nửa đêm'], answer: 1, note: 'Ai cũng có một món chân ái 😌' },
@@ -250,7 +258,7 @@
     ];
     const STORY = [
       { icon: '💌', title: 'Có một chiếc thử thách nhỏ vừa được gửi đến bạn...', text: 'Ting ting! Bạn có một lá thư mới nè 📬' },
-      { icon: '🕵️', title: 'Bạn hiểu chủ nhân chiếc link này đến mức nào?', text: 'Một vài câu hỏi thú vị đang chờ bạn đó 👀' },
+      { icon: '🕵️', title: 'Để xem bạn hiểu {owner} đến mức nào nha...', text: 'Một vài câu hỏi thú vị đang chờ bạn đó 👀' },
       { icon: '🚀', title: 'Sẵn sàng chưa? Bắt đầu thui!', text: 'Trả lời thật lòng nha, chủ nhân đang chờ đó 😌' }
     ];
     const RESULT_LEVELS = [
@@ -262,11 +270,11 @@
     ];
     // Optional: set this when previewing locally to use the deployed Netlify domain.
     const PUBLIC_BASE_URL = '';
-    const DEFAULT_CONFIG = { ownerName: 'tui', allowRetry: true, showAnswers: true, secretMessage: '', secretThreshold: 80, questions: DEFAULT_QUESTIONS };
+    const DEFAULT_CONFIG = { id: '', ownerName: 'tui', allowRetry: true, showAnswers: true, secretMessage: '', secretThreshold: 80, questions: DEFAULT_QUESTIONS };
     const deepCopy = (value) => JSON.parse(JSON.stringify(value));
 
     function validQuestions(value) {
-      if (!Array.isArray(value) || value.length < 1 || value.length > 30) return false;
+      if (!Array.isArray(value) || value.length < 1 || value.length > 15) return false;
       return value.every((item) => item && typeof item.q === 'string' && item.q.trim() &&
         typeof item.emoji === 'string' && Array.isArray(item.options) && item.options.length === 4 &&
         item.options.every((option) => typeof option === 'string' && option.trim()) &&
@@ -278,6 +286,7 @@
       if (!value || typeof value !== 'object' || !validQuestions(value.questions)) throw new Error('Bộ quiz trong link không hợp lệ.');
       const threshold = Number(value.secretThreshold);
       return {
+        id: typeof value.id === 'string' && /^[a-z0-9]{6,20}$/.test(value.id) ? value.id : '',
         ownerName: String(value.ownerName || 'tui').trim().slice(0, 32) || 'tui',
         allowRetry: value.allowRetry !== false,
         showAnswers: value.showAnswers !== false,
@@ -291,12 +300,12 @@
     // Dạng mảng thay vì object: bỏ toàn bộ tên khóa JSON lặp đi lặp lại.
     function toCompact(c) {
       return [c.ownerName, c.allowRetry ? 1 : 0, c.showAnswers ? 1 : 0, c.secretMessage, c.secretThreshold,
-        c.questions.map((x) => [x.q, x.emoji, x.options, x.answer, x.note])];
+        c.questions.map((x) => [x.q, x.emoji, x.options, x.answer, x.note]), c.id || ''];
     }
     function fromCompact(a) {
       if (!Array.isArray(a) || !Array.isArray(a[5])) throw new Error('Bộ quiz trong link không hợp lệ.');
       return normalizeConfig({
-        ownerName: a[0], allowRetry: a[1] !== 0, showAnswers: a[2] !== 0, secretMessage: a[3], secretThreshold: a[4],
+        id: a[6] || '', ownerName: a[0], allowRetry: a[1] !== 0, showAnswers: a[2] !== 0, secretMessage: a[3], secretThreshold: a[4],
         questions: a[5].map((x) => ({ q: x[0], emoji: x[1], options: x[2], answer: x[3], note: x[4] }))
       });
     }
@@ -346,13 +355,25 @@
       return normalizeConfig(JSON.parse(decodeURIComponent(escaped)));
     }
     function quizId(config) {
-      const text = JSON.stringify(config);
+      if (config.id && /^[a-z0-9]{6,20}$/.test(config.id)) return config.id;
+      const text = JSON.stringify({
+        ownerName: config.ownerName,
+        allowRetry: config.allowRetry,
+        showAnswers: config.showAnswers,
+        secretMessage: config.secretMessage,
+        secretThreshold: config.secretThreshold,
+        questions: config.questions
+      });
       let first = 2166136261, second = 0x9e3779b9;
       for (let i = 0; i < text.length; i++) {
         first = Math.imul(first ^ text.charCodeAt(i), 16777619);
         second = Math.imul(second ^ text.charCodeAt(i), 2246822519);
       }
       return `${(first >>> 0).toString(36)}${(second >>> 0).toString(36)}`;
+    }
+    function createQuizId() {
+      const bytes = crypto.getRandomValues(new Uint8Array(10));
+      return Array.from(bytes, (byte) => (byte % 36).toString(36)).join('');
     }
     const storageGet = (key, fallback = null) => {
       try { const value = localStorage.getItem(key); return value === null ? fallback : JSON.parse(value); }
@@ -383,6 +404,14 @@
       publishedCode = result.code;
       storageSet('bhttn_short_codes', shortCodeCache);
       return buildShortUrl(publishedCode);
+    }
+    async function standaloneShareUrl() {
+      const encoded = await encodeQuiz(config);
+      const url = new URL(PUBLIC_BASE_URL || window.location.href);
+      url.hash = '';
+      url.search = '';
+      url.searchParams.set('quiz', encoded);
+      return url.toString();
     }
     function buildShortUrl(code) {
       const url = new URL(PUBLIC_BASE_URL || window.location.href);
@@ -431,6 +460,25 @@
         oscillator.connect(gain).connect(ctx.destination);
         oscillator.start(time); oscillator.stop(time + duration + .02);
       };
+      const applause = () => {
+        const ctx = audio();
+        if (!ctx || muted) return;
+        for (let burst = 0; burst < 18; burst++) {
+          const start = ctx.currentTime + .45 + Math.random() * 1.05;
+          const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * .055), ctx.sampleRate);
+          const samples = buffer.getChannelData(0);
+          for (let i = 0; i < samples.length; i++) samples[i] = (Math.random() * 2 - 1) * (1 - i / samples.length);
+          const source = ctx.createBufferSource();
+          const filter = ctx.createBiquadFilter();
+          const gain = ctx.createGain();
+          source.buffer = buffer;
+          filter.type = 'bandpass';
+          filter.frequency.value = 900 + Math.random() * 1800;
+          gain.gain.value = .055;
+          source.connect(filter).connect(gain).connect(ctx.destination);
+          source.start(start);
+        }
+      };
       return {
         get muted() { return muted; },
         unlock: audio,
@@ -441,7 +489,10 @@
         correct() { [784, 988, 1175, 1568].forEach((f, i) => tone(f, i * .08, .2, 'triangle', .17)); },
         wrong() { tone(330, 0, .18, 'square', .07, 260); tone(247, .16, .25, 'square', .06, 196); },
         whoosh() { tone(300, 0, .24, 'sine', .12, 900); },
-        victory() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * .12, .42, 'triangle', .16)); }
+        victory() {
+          [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * .12, .42, 'triangle', .16));
+          applause();
+        }
       };
     })();
 
@@ -495,7 +546,8 @@
     function renderStory() {
       const slide = STORY[currentStory];
       document.querySelectorAll('.story-bar span').forEach((bar, index) => { bar.style.width = index <= currentStory ? '100%' : '0'; });
-      storyCard.innerHTML = `<div class="text-8xl bob">${slide.icon}</div><h1 class="mt-8 max-w-md font-display text-3xl font-extrabold leading-tight sm:text-4xl">${esc(slide.title)}</h1><p class="mt-3 text-ink/60">${esc(slide.text)}</p>${currentStory === STORY.length - 1 ? '<button id="startBtn" type="button" class="heartbeat mt-8 rounded-3xl bg-gradient-to-r from-blush-400 via-lilac-400 to-mint-400 px-10 py-4 font-display text-xl font-bold text-white shadow-xl">Bắt đầu ngay ✨</button>' : '<p class="mt-8 text-xs text-ink/40">Chạm để tiếp tục</p>'}`;
+      const storyTitle = slide.title.replace('{owner}', config.ownerName);
+      storyCard.innerHTML = `<div class="text-8xl bob">${slide.icon}</div><h1 class="mt-8 max-w-md font-display text-3xl font-extrabold leading-tight sm:text-4xl">${esc(storyTitle)}</h1><p class="mt-3 text-ink/60">${esc(slide.text)}</p>${currentStory === STORY.length - 1 ? '<button id="startBtn" type="button" class="heartbeat mt-8 rounded-3xl bg-gradient-to-r from-blush-400 via-lilac-400 to-mint-400 px-10 py-4 font-display text-xl font-bold text-white shadow-xl">Bắt đầu ngay ✨</button>' : '<p class="mt-8 text-xs text-ink/40">Chạm để tiếp tục</p>'}`;
       $('nextStoryBtn').classList.toggle('invisible', currentStory === STORY.length - 1);
       $('skipBtn').classList.toggle('invisible', currentStory === STORY.length - 1);
       const start = $('startBtn');
@@ -520,6 +572,12 @@
       }));
     }
     function startNameFlow() {
+      const previousAttempt = !config.allowRetry ? storageGet(attemptKey()) : null;
+      if (previousAttempt) {
+        renderResult(previousAttempt, false);
+        toast('Bạn đã hoàn thành quiz này trên trình duyệt rồi nha.');
+        return;
+      }
       $('playerName').value = playerName;
       renderAvatars();
       showScreen('screen-name');
@@ -588,7 +646,10 @@
           Sound.correct();
           const rect = $('nextQBtn').getBoundingClientRect();
           hearts(rect.left + rect.width / 2, rect.top - 20);
-        } else Sound.wrong();
+        } else {
+          Sound.wrong();
+          $('qBody').querySelector(`[data-option="${selectedOption}"]`)?.classList.add('shake');
+        }
         $('qScore').textContent = `💖 ${score} điểm`;
         $('nextQBtn').textContent = nextLabel();
       }
@@ -619,7 +680,7 @@
       const entries = storageGet(leaderboardKey(), []);
       entries.push(entry);
       entries.sort((a, b) => (b.score / b.total) - (a.score / a.total) || b.score - a.score || a.completedAt - b.completedAt);
-      storageSet(leaderboardKey(), entries.slice(0, 30));
+      storageSet(leaderboardKey(), entries.slice(0, 100));
       renderLeaderboard(entries);
     }
     function setLeaderboardStatus(message) {
@@ -709,6 +770,12 @@
       else Sound.ting();
     }
     $('retryBtn').addEventListener('click', () => { Sound.pop(); beginQuiz(); });
+    $('homeBtn').addEventListener('click', () => {
+      currentStory = 0;
+      renderStory();
+      showScreen('screen-story');
+      Sound.whoosh();
+    });
     $('creatorLoopBtn').addEventListener('click', () => { Sound.pop(); openCreator(); });
     $('shareBtn').addEventListener('click', async () => {
       try {
@@ -760,7 +827,7 @@
       }));
     }
     $('addQCreatorBtn').addEventListener('click', () => {
-      if (ownerQuestions.length >= 30) { toast('Mỗi quiz tạo tối đa 30 câu nha!'); return; }
+      if (ownerQuestions.length >= 15) { toast('Mỗi quiz tạo tối đa 15 câu nha!'); return; }
       ownerQuestions.push({ q: '', emoji: '✨', options: ['', '', '', ''], answer: 0, note: '' });
       renderCreatorQuestions();
       $('creatorQuestionsList').lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -769,7 +836,11 @@
     $('backToResultBtn').addEventListener('click', () => showScreen('screen-result'));
 
     async function currentShareUrl() {
-      return createShortUrl();
+      try { return await createShortUrl(); }
+      catch (error) {
+        console.warn('Link ngắn không khả dụng, dùng link quiz tự chứa:', error);
+        return standaloneShareUrl();
+      }
     }
     async function publishQuiz() {
       const ownerName = $('ownerInput').value.trim();
@@ -778,12 +849,12 @@
       const threshold = Number($('thresholdInput').value);
       if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100) { toast('Mức mở khóa phải nằm trong khoảng 0–100%.'); $('thresholdInput').focus(); return; }
       config = normalizeConfig({
-        ownerName, allowRetry: $('allowRetryInput').checked, showAnswers: $('showAnswersInput').checked,
+        id: createQuizId(), ownerName, allowRetry: $('allowRetryInput').checked, showAnswers: $('showAnswersInput').checked,
         secretMessage: $('secretInput').value.trim(), secretThreshold: threshold, questions: ownerQuestions
       });
       id = quizId(config);
       storageSet(`bhttn_quiz_${id}`, config);
-      $('publishedUrl').value = 'Đang tạo link 4 ký tự…';
+      $('publishedUrl').value = 'Đang tạo link chia sẻ…';
       $('copyLinkBtn').disabled = true;
       $('shareLinkBtn').disabled = true;
       $('publishedScoresBtn').disabled = true;
@@ -798,12 +869,24 @@
         $('publishedScoresBtn').disabled = false;
         toast('Đã tạo link quiz 4 ký tự! 🎉');
       } catch (error) {
-        console.error('Không thể tạo link quiz ngắn:', error);
-        $('publishedUrl').value = 'Hãy triển khai site và Netlify DB trước khi tạo link ngắn.';
-        $('copyLinkBtn').disabled = true;
-        $('shareLinkBtn').disabled = true;
-        $('publishedScoresBtn').disabled = true;
-        toast('Chưa tạo được link ngắn. Kiểm tra cấu hình Netlify DB rồi thử lại.');
+        console.warn('Netlify link ngắn không khả dụng, tạo link tự chứa:', error);
+        try {
+          publishedCode = '';
+          publishedLink = await standaloneShareUrl();
+          history.replaceState({}, '', publishedLink);
+          $('publishedUrl').value = publishedLink;
+          $('copyLinkBtn').disabled = false;
+          $('shareLinkBtn').disabled = false;
+          $('publishedScoresBtn').disabled = false;
+          toast('Đã tạo link tự chứa — hoạt động trên GitHub Pages và Netlify 💖');
+        } catch (fallbackError) {
+          console.error('Không thể mã hóa quiz để chia sẻ:', fallbackError);
+          $('publishedUrl').value = 'Không thể tạo link chia sẻ trên trình duyệt này.';
+          $('copyLinkBtn').disabled = true;
+          $('shareLinkBtn').disabled = true;
+          $('publishedScoresBtn').disabled = true;
+          toast('Không thể mã hóa quiz. Hãy thử trình duyệt khác.');
+        }
       }
     }
     $('publishBtn').addEventListener('click', publishQuiz);
@@ -854,8 +937,7 @@
       showScreen(publishedCode ? 'screen-published' : 'screen-result');
     });
     $('copyScoresLinkBtn').addEventListener('click', async () => {
-      const code = publishedCode || new URLSearchParams(window.location.search).get('s') || '';
-      if (!code) { toast('Chưa có mã quiz để tạo link bảng điểm.'); return; }
+      const code = publishedCode || new URLSearchParams(window.location.search).get('s') || id;
       try { await copyText(buildScoresUrl(code)); toast('Đã copy link xem bảng điểm! 🔗'); }
       catch (error) {
         console.error('Không thể copy link bảng điểm:', error);
@@ -884,6 +966,20 @@
       const scoresCode = params.get('scores');
       const encoded = params.get('q');
       const legacyEncoded = params.get('quiz');
+      if (scoresCode && !/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/i.test(scoresCode)) {
+        if (!/^[a-z0-9]{6,20}$/i.test(scoresCode)) {
+          $('linkErrorText').textContent = 'Mã link không đúng định dạng.';
+          showScreen('screen-link-error');
+          return;
+        }
+        id = scoresCode.toLowerCase();
+        const savedQuiz = storageGet(`bhttn_quiz_${id}`);
+        if (savedQuiz) {
+          try { config = normalizeConfig(savedQuiz); } catch (error) { console.warn('Quiz đã lưu không hợp lệ:', error); }
+        }
+        await showLeaderboard();
+        return;
+      }
       if (shortCode || scoresCode) {
         const code = (scoresCode || shortCode || '').toUpperCase();
         if (!/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/.test(code)) {
@@ -925,11 +1021,15 @@
         }
       } else if (legacyEncoded) {
         try {
-          config = legacyQuiz(legacyEncoded);
+          try { config = await decodeQuiz(legacyEncoded); }
+          catch { config = legacyQuiz(legacyEncoded); }
           id = quizId(config);
+          storageSet(`bhttn_quiz_${id}`, config);
         } catch (error) {
           console.error('Không thể đọc link quiz cũ:', error);
-          toast('Link quiz cũ không hợp lệ. Đang mở quiz mặc định.');
+          $('linkErrorText').textContent = 'Link quiz không hợp lệ hoặc đã bị cắt mất dữ liệu.';
+          showScreen('screen-link-error');
+          return;
         }
       } else {
         const saved = storageGet('bhttn_active_quiz');
@@ -940,6 +1040,10 @@
       }
       if (!storageSet('bhttn_active_quiz', config)) toast('Quiz đang chạy nhưng trình duyệt không thể lưu bộ câu hỏi này.');
       renderStory();
+      if (window.location.hash === '#create') {
+        openCreator();
+        return;
+      }
       const attempt = config.allowRetry ? null : storageGet(attemptKey());
       if (attempt && Number.isFinite(Number(attempt.score)) && Number.isFinite(Number(attempt.total))) {
         playerName = attempt.name || playerName;

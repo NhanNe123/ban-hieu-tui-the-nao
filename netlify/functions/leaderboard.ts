@@ -34,7 +34,7 @@ export default async (req: Request) => {
     const avatar = typeof payload.avatar === "string" && payload.avatar.length <= 16 ? payload.avatar : "";
     const total = Number(payload.total);
     const score = Number(payload.score);
-    if (!/^[a-z0-9]{6,20}$/.test(quizId) || !name || !avatar || !Number.isInteger(total) || total < 1 || total > 30 || !Number.isInteger(score) || score < 0 || score > total) {
+    if (!/^[a-z0-9]{6,20}$/.test(quizId) || !name || !avatar || !Number.isInteger(total) || total < 1 || total > 15 || !Number.isInteger(score) || score < 0 || score > total) {
       return Response.json({ error: "Invalid score" }, { status: 400 });
     }
     await db.insert(scores).values({ quizId, name, avatar, score, total });
