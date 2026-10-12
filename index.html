@@ -139,7 +139,6 @@
           <div id="secretBox" class="relative mt-6 rounded-3xl border border-white bg-white/65 p-4 text-left"></div>
           <div class="relative mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button id="retryBtn" type="button" class="hidden rounded-3xl border-2 border-lilac-200 bg-white/85 py-3.5 font-display text-lg font-bold text-lilac-500">🔁 Chơi lại</button>
-            <button id="shareBtn" type="button" class="rounded-3xl bg-gradient-to-r from-mint-400 to-lilac-400 py-3.5 font-display text-lg font-bold text-white shadow-lg">📤 Khoe điểm & Rủ bạn bè</button>
             <button id="creatorLoopBtn" type="button" class="heartbeat col-span-1 rounded-3xl border border-white bg-gradient-to-r from-[#ffe5f0] via-white to-[#e7e8ff] px-4 py-4 font-display text-lg font-extrabold text-ink shadow-lg shadow-lilac-200/50 sm:col-span-2">✍️ Tạo câu hỏi mới</button>
           </div>
           <button id="homeBtn" type="button" class="relative mt-3 w-full rounded-2xl border border-lilac-100 bg-white/65 py-3 font-semibold text-ink/65 transition hover:bg-white">🏠 Quay lại trang chủ</button>
@@ -189,7 +188,7 @@
               <div id="creatorQuestionsList" class="space-y-3"></div>
             </section>
           </div>
-          <button id="publishBtn" type="button" class="mt-4 w-full rounded-3xl bg-gradient-to-r from-blush-400 to-lilac-400 px-4 py-4 font-display text-lg font-extrabold text-white shadow-lg">🚀 Xuất bản & Lấy Link Chia Sẻ</button>
+          <button id="publishBtn" type="button" class="mt-4 w-full rounded-3xl bg-gradient-to-r from-blush-400 to-lilac-400 px-4 py-4 font-display text-lg font-extrabold text-white shadow-lg">🚀 Tạo quiz & Lấy Link</button>
         </div>
       </section>
 
@@ -201,11 +200,7 @@
           <h1 class="font-display text-3xl font-extrabold">Gửi thử thách đi nè!</h1>
           <p class="mt-2 text-sm text-ink/60">Ai mở link cũng nhận đúng câu hỏi và luật chơi của bạn.</p>
           <input id="publishedUrl" readonly class="mt-5 w-full rounded-2xl border border-lilac-200 bg-white px-3 py-3 text-sm text-ink/75">
-          <div class="mt-4 grid gap-3 sm:grid-cols-2">
-            <button id="copyLinkBtn" type="button" class="rounded-3xl bg-mint-100 py-3.5 font-display font-bold text-mint-500 disabled:opacity-50">📋 Copy link</button>
-            <button id="shareLinkBtn" type="button" class="rounded-3xl bg-gradient-to-r from-lilac-400 to-blush-400 py-3.5 font-display font-bold text-white disabled:opacity-50">📤 Chia sẻ qua ứng dụng</button>
-            <button id="zaloShareLinkBtn" type="button" class="rounded-3xl bg-[#e7f3ff] py-3.5 font-display font-bold text-[#0879d1] disabled:opacity-50 sm:col-span-2">💬 Chia sẻ qua Zalo</button>
-          </div>
+          <button id="copyLinkBtn" type="button" class="mt-4 w-full rounded-3xl bg-mint-100 py-3.5 font-display font-bold text-mint-500 disabled:opacity-50">📋 Copy link</button>
           <button id="playPublishedBtn" type="button" class="mt-3 w-full rounded-3xl border-2 border-lilac-200 bg-white/80 py-3.5 font-display font-bold text-lilac-500">🎮 Chơi thử quiz này</button>
           <button id="publishedScoresBtn" type="button" class="mt-3 w-full rounded-3xl bg-blush-100 py-3.5 font-display font-bold text-blush-500">📊 Xem điểm của mọi người</button>
           <button id="publishedHomeBtn" type="button" class="mt-3 w-full rounded-2xl border border-lilac-100 bg-white/65 py-3 font-semibold text-ink/65 transition hover:bg-white">🏠 Quay lại trang chủ</button>
@@ -836,19 +831,6 @@
       openCreator('screen-home');
     });
     $('creatorLoopBtn').addEventListener('click', () => { Sound.pop(); openCreator(); });
-    $('shareBtn').addEventListener('click', async () => {
-      try {
-        toast('Đang chuẩn bị link gọn… ⏳');
-        const url = await currentShareUrl();
-        const result = displayedResult || { name: playerName, avatar: playerAvatar, score, total: config.questions.length };
-        const text = `${result.avatar} ${result.name} được ${result.score}/${result.total} điểm trong quiz của ${config.ownerName}! Thử xem bạn hiểu ${config.ownerName} tới đâu 💖`;
-        await shareOrCopy(text, url);
-      } catch (error) {
-        console.error('Không thể tạo link quiz để chia sẻ:', error);
-        toast('Chưa tạo được link ngắn. Kiểm tra cấu hình Vercel database rồi thử lại.');
-      }
-    });
-
     function openCreator(returnScreen = 'screen-result') {
       creatorReturnScreen = returnScreen;
       $('backToResultBtn').textContent = returnScreen === 'screen-home' ? '← Trang chủ' : '← Kết quả';
@@ -926,18 +908,13 @@
       storageSet(`bhttn_quiz_${id}`, config);
       $('publishedUrl').value = 'Đang tạo link chia sẻ…';
       $('copyLinkBtn').disabled = true;
-      $('shareLinkBtn').disabled = true;
-      $('zaloShareLinkBtn').disabled = true;
       $('publishedScoresBtn').disabled = true;
       showScreen('screen-published');
       Sound.victory();
       try {
         publishedLink = await createShortUrl();
-        history.replaceState({ creatorQuizId: id }, '', publishedLink);
         $('publishedUrl').value = publishedLink;
         $('copyLinkBtn').disabled = false;
-        $('shareLinkBtn').disabled = false;
-        $('zaloShareLinkBtn').disabled = false;
         $('publishedScoresBtn').disabled = false;
         toast('Đã tạo link quiz 6 ký tự! 🎉');
       } catch (error) {
@@ -945,23 +922,19 @@
         try {
           publishedCode = '';
           publishedLink = await standaloneShareUrl();
-          history.replaceState({ creatorQuizId: id }, '', publishedLink);
           $('publishedUrl').value = publishedLink;
           $('copyLinkBtn').disabled = false;
-          $('shareLinkBtn').disabled = false;
-          $('zaloShareLinkBtn').disabled = false;
           $('publishedScoresBtn').disabled = false;
           toast('Đã tạo link tự chứa — hoạt động trên GitHub Pages và Vercel 💖');
         } catch (fallbackError) {
           console.error('Không thể mã hóa quiz để chia sẻ:', fallbackError);
           $('publishedUrl').value = 'Không thể tạo link chia sẻ trên trình duyệt này.';
           $('copyLinkBtn').disabled = true;
-          $('shareLinkBtn').disabled = true;
-          $('zaloShareLinkBtn').disabled = true;
           $('publishedScoresBtn').disabled = true;
           toast('Không thể mã hóa quiz. Hãy thử trình duyệt khác.');
         }
       }
+      if (publishedLink) history.replaceState({}, '', window.location.pathname);
     }
     $('publishBtn').addEventListener('click', publishQuiz);
     async function copyText(text) {
@@ -981,34 +954,9 @@
       if (!copied) throw new Error('Trình duyệt từ chối sao chép nội dung.');
       return true;
     }
-    async function shareOrCopy(text, url) {
-      if (navigator.share) {
-        try {
-          await navigator.share({ title: `Quiz của ${config.ownerName} 💖`, text, url });
-          toast('Đã mở bảng chia sẻ 💌');
-          return;
-        } catch (error) {
-          if (error.name === 'AbortError') return;
-          console.warn('Web Share API thất bại, chuyển sang copy link:', error);
-        }
-      }
-      try { await copyText(`${text}\n${url}`); toast('Đã copy lời rủ và link quiz 📋'); }
-      catch (error) { console.error('Không thể chia sẻ hoặc copy link:', error); toast('Không copy được link. Hãy chọn và sao chép link hiển thị.'); }
-    }
-    function shareToZalo(url) {
-      const shareUrl = new URL('https://zalo.me/share');
-      shareUrl.searchParams.set('u', url);
-      window.open(shareUrl, '_blank', 'noopener,noreferrer');
-    }
     $('copyLinkBtn').addEventListener('click', async () => {
       try { await copyText(publishedLink); toast('Đã copy link quiz! Gửi bạn bè thôi 📋'); }
       catch (error) { console.error('Không thể copy link:', error); toast('Không copy được. Hãy chọn link trong ô để sao chép.'); $('publishedUrl').focus(); $('publishedUrl').select(); }
-    });
-    $('shareLinkBtn').addEventListener('click', () => shareOrCopy(`Tui vừa tạo quiz về ${config.ownerName}! Thử xem bạn hiểu tui đến mức nào nha 💖`, publishedLink));
-    $('zaloShareLinkBtn').addEventListener('click', () => {
-      if (!publishedLink) return;
-      shareToZalo(publishedLink);
-      toast('Đang mở Zalo để chia sẻ link quiz 💬');
     });
     $('playPublishedBtn').addEventListener('click', () => {
       const attempt = !config.allowRetry ? storageGet(attemptKey()) : null;
@@ -1127,17 +1075,16 @@
       }
       if (!storageSet('bhttn_active_quiz', config)) toast('Quiz đang chạy nhưng trình duyệt không thể lưu bộ câu hỏi này.');
       renderStory();
-      const returningCreatorToHome = window.history.state?.creatorQuizId === id;
       if (window.location.hash === '#create') {
         openCreator('screen-home');
         return;
       }
       const attempt = config.allowRetry ? null : storageGet(attemptKey());
-      if (!returningCreatorToHome && attempt && Number.isFinite(Number(attempt.score)) && Number.isFinite(Number(attempt.total))) {
+      if (openingSharedQuiz && attempt && Number.isFinite(Number(attempt.score)) && Number.isFinite(Number(attempt.total))) {
         playerName = attempt.name || playerName;
         playerAvatar = attempt.avatar || playerAvatar;
         renderResult(attempt, false);
-      } else showScreen(openingSharedQuiz && !returningCreatorToHome ? 'screen-story' : 'screen-home');
+      } else showScreen(openingSharedQuiz ? 'screen-story' : 'screen-home');
     }
     initialize().catch((error) => {
       console.error('Không thể khởi tạo mini-quiz:', error);
