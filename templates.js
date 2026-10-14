@@ -1,10 +1,4 @@
-/**
- * Ngân hàng câu hỏi gợi ý cho "Xưởng tạo quiz".
- * Mỗi chủ đề có 10 câu; bấm "Gợi ý nhanh" sẽ rút ngẫu nhiên 1 câu trong chủ đề đó.
- *
- * Cấu trúc một câu: { emoji, q, options: [4 đáp án], answer: 0-3, note }
- * `answer` chỉ là đáp án mẫu — chủ quiz sẽ tự chọn lại đáp án đúng của mình.
- */
+
 window.QUESTION_TEMPLATES = [
   {
     id: 'food',
